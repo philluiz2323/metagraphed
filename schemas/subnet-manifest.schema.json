@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://metagraph.sh/schemas/subnet-manifest.schema.json",
+  "title": "Metagraphed Subnet Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "netuid",
+    "name",
+    "slug",
+    "status",
+    "categories",
+    "surfaces"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "netuid": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "inactive",
+        "unknown"
+      ]
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "docs_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "source_repo": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "dashboard_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/surface"
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "url",
+        "provider",
+        "auth_required",
+        "authority",
+        "public_safe"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "subtensor-rpc",
+            "subtensor-wss",
+            "subnet-api",
+            "openapi",
+            "sse",
+            "dashboard",
+            "repo-registry",
+            "docs",
+            "data-artifact"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "provider": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "auth_required": {
+          "type": "boolean"
+        },
+        "authority": {
+          "enum": [
+            "official",
+            "provider-claimed",
+            "community",
+            "registry-observed"
+          ]
+        },
+        "public_safe": {
+          "type": "boolean"
+        },
+        "schema_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "rate_limit_notes": {
+          "type": "string"
+        },
+        "probe": {
+          "$ref": "#/$defs/probe"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "method",
+        "expect"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "method": {
+          "enum": [
+            "GET",
+            "HEAD"
+          ]
+        },
+        "expect": {
+          "enum": [
+            "json",
+            "html",
+            "sse",
+            "any"
+          ]
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 30000
+        }
+      }
+    }
+  }
+}

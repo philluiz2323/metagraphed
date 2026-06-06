@@ -1,0 +1,26 @@
+{
+  "extensions": {
+    "gittensor": {
+      "excluded_dimensions": [
+        "credentialed_github_flows",
+        "private_validator_inputs",
+        "private_dashboards",
+        "wallet_data"
+      ],
+      "tracked_dimensions": [
+        "repositories",
+        "bounties",
+        "contributions",
+        "emissions_metadata",
+        "maintainer_cuts",
+        "mirror_freshness",
+        "public_safe_aggregates"
+      ]
+    }
+  },
+  "generated_at": "1970-01-01T00:00:00.000Z",
+  "netuid": 74,
+  "schema_version": 1,
+  "slug": "gittensor",
+  "subnet": "Gittensor"
+}

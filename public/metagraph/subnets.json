@@ -1,0 +1,36 @@
+{
+  "generated_at": "1970-01-01T00:00:00.000Z",
+  "schema_version": 1,
+  "subnets": [
+    {
+      "categories": [
+        "bitcoin",
+        "subnet-api",
+        "pilot"
+      ],
+      "dashboard_url": null,
+      "docs_url": "https://docs.all-ways.io/how-it-works.html",
+      "name": "Allways",
+      "netuid": 7,
+      "slug": "allways",
+      "source_repo": null,
+      "status": "active",
+      "surface_count": 13
+    },
+    {
+      "categories": [
+        "developer-tools",
+        "repositories",
+        "pilot"
+      ],
+      "dashboard_url": null,
+      "docs_url": "https://docs.gittensor.io/",
+      "name": "Gittensor",
+      "netuid": 74,
+      "slug": "gittensor",
+      "source_repo": null,
+      "status": "active",
+      "surface_count": 3
+    }
+  ]
+}

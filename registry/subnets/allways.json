@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "netuid": 7,
+  "name": "Allways",
+  "slug": "allways",
+  "status": "active",
+  "categories": [
+    "bitcoin",
+    "subnet-api",
+    "pilot"
+  ],
+  "docs_url": "https://docs.all-ways.io/how-it-works.html",
+  "source_repo": null,
+  "dashboard_url": null,
+  "notes": "Pilot manifest. Registry observations are external status data, not Allways protocol authority.",
+  "surfaces": [
+    {
+      "id": "allways-docs",
+      "name": "Allways docs",
+      "kind": "docs",
+      "url": "https://docs.all-ways.io/how-it-works.html",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "html"
+      }
+    },
+    {
+      "id": "allways-swagger",
+      "name": "Allways Swagger UI",
+      "kind": "openapi",
+      "url": "https://api.all-ways.io/swagger",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "html"
+      }
+    },
+    {
+      "id": "allways-api-health",
+      "name": "Allways API health",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/health",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-protocol-constants",
+      "name": "Allways protocol constants",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/protocol/constants",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-protocol-chain-state",
+      "name": "Allways protocol chain state",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/protocol/chain-state",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-network-overview",
+      "name": "Allways network overview",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/network/overview",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-miners",
+      "name": "Allways miners",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/miners",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-miners-leaderboard",
+      "name": "Allways miners leaderboard",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/miners/leaderboard",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-miners-reliability",
+      "name": "Allways miners reliability",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/miners/reliability",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-events-latest",
+      "name": "Allways latest events",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/events/latest",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-crown",
+      "name": "Allways crown",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/crown",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "json"
+      }
+    },
+    {
+      "id": "allways-crown-history",
+      "name": "Allways crown history",
+      "kind": "subnet-api",
+      "url": "https://api.all-ways.io/crown/history",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": false,
+        "method": "GET",
+        "expect": "json"
+      },
+      "notes": "Listed as a public surface, but excluded from the default smoke probe because the endpoint may require query parameters and returns HTTP 400 for a blind GET."
+    },
+    {
+      "id": "allways-sse",
+      "name": "Allways SSE stream",
+      "kind": "sse",
+      "url": "https://api.all-ways.io/sse",
+      "provider": "allways",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "sse",
+        "timeout_ms": 5000
+      }
+    }
+  ],
+  "extensions": {
+    "allways": {
+      "tracked_dimensions": [
+        "swaps",
+        "events",
+        "crown",
+        "miners",
+        "leaderboard",
+        "reliability",
+        "protocol_state",
+        "sse"
+      ],
+      "authority_notes": [
+        "chain and contract truth are authoritative for settlement state",
+        "public API and probe data are convenience/status surfaces"
+      ]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "generated_at": "1970-01-01T00:00:00.000Z",
+  "notes": "Native Bittensor metagraph ingestion is not enabled yet. This file is a deterministic seed projection.",
+  "schema_version": 1,
+  "source": "seed-manifests",
+  "subnets": [
+    {
+      "categories": [
+        "bitcoin",
+        "subnet-api",
+        "pilot"
+      ],
+      "name": "Allways",
+      "netuid": 7,
+      "slug": "allways",
+      "status": "active"
+    },
+    {
+      "categories": [
+        "developer-tools",
+        "repositories",
+        "pilot"
+      ],
+      "name": "Gittensor",
+      "netuid": 74,
+      "slug": "gittensor",
+      "status": "active"
+    }
+  ]
+}

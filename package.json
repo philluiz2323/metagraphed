@@ -1,0 +1,24 @@
+{
+  "name": "metagraphed",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Operational metadata, health, schemas, and public interface discovery for Bittensor subnets.",
+  "homepage": "https://metagraph.sh",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JSONbored/metagraphed.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "build": "node scripts/build-artifacts.mjs",
+    "build:artifacts": "node scripts/build-artifacts.mjs",
+    "probes:smoke": "node scripts/probes-smoke.mjs",
+    "scan:public-safety": "node scripts/scan-public-safety.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

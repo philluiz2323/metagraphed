@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "netuid": 74,
+  "name": "Gittensor",
+  "slug": "gittensor",
+  "status": "active",
+  "categories": [
+    "developer-tools",
+    "repositories",
+    "pilot"
+  ],
+  "docs_url": "https://docs.gittensor.io/",
+  "source_repo": null,
+  "dashboard_url": null,
+  "notes": "Pilot manifest. This tracks public-safe registry concepts only; validator credential flows and private scoring internals are out of scope.",
+  "surfaces": [
+    {
+      "id": "gittensor-docs",
+      "name": "Gittensor docs",
+      "kind": "docs",
+      "url": "https://docs.gittensor.io/",
+      "provider": "gittensor",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "html"
+      }
+    },
+    {
+      "id": "gittensor-registration-docs",
+      "name": "Gittensor repository registration docs",
+      "kind": "docs",
+      "url": "https://docs.gittensor.io/register-repository.html",
+      "provider": "gittensor",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "html"
+      }
+    },
+    {
+      "id": "gittensor-hyperparameters-docs",
+      "name": "Gittensor repository hyperparameters docs",
+      "kind": "docs",
+      "url": "https://docs.gittensor.io/repository-hyperparameters",
+      "provider": "gittensor",
+      "auth_required": false,
+      "authority": "provider-claimed",
+      "public_safe": true,
+      "probe": {
+        "enabled": true,
+        "method": "GET",
+        "expect": "html"
+      }
+    }
+  ],
+  "extensions": {
+    "gittensor": {
+      "tracked_dimensions": [
+        "repositories",
+        "bounties",
+        "contributions",
+        "emissions_metadata",
+        "maintainer_cuts",
+        "mirror_freshness",
+        "public_safe_aggregates"
+      ],
+      "excluded_dimensions": [
+        "credentialed_github_flows",
+        "private_validator_inputs",
+        "private_dashboards",
+        "wallet_data"
+      ]
+    }
+  }
+}

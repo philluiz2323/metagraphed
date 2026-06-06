@@ -1,0 +1,25 @@
+{
+  "extensions": {
+    "allways": {
+      "authority_notes": [
+        "chain and contract truth are authoritative for settlement state",
+        "public API and probe data are convenience/status surfaces"
+      ],
+      "tracked_dimensions": [
+        "swaps",
+        "events",
+        "crown",
+        "miners",
+        "leaderboard",
+        "reliability",
+        "protocol_state",
+        "sse"
+      ]
+    }
+  },
+  "generated_at": "1970-01-01T00:00:00.000Z",
+  "netuid": 7,
+  "schema_version": 1,
+  "slug": "allways",
+  "subnet": "Allways"
+}
