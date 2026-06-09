@@ -120,6 +120,18 @@ Generated public artifact routes live under `/metagraph/*`. Compact indexes and 
 
 The generated files are deterministic and suitable for static hosting, R2-backed serving, CI review, and downstream consumption. Artifact contracts include `storage_tier` so validators, OpenAPI generation, R2 upload, and Worker loading agree on where each artifact belongs.
 
+## Status Badges
+
+Every subnet has a self-hosted SVG health badge (no third-party badge service):
+
+```markdown
+![Allways SN7 health](https://metagraph.sh/metagraph/health/badges/7.svg)
+```
+
+Badges render from the published `/metagraph/health/badges/{netuid}.json`
+artifact (`ok`/`degraded`/`failed`/`unknown`, probe-derived). Embedding one in a
+subnet README links back to its Metagraphed coverage.
+
 ## Contract Source Of Truth
 
 Metagraphed uses JSON Schema as the canonical public/runtime contract. Contributors should edit modular schemas under `schemas/components/*.schema.json`, then run `npm run schemas:bundle` and `npm run build`.

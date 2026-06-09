@@ -90,6 +90,10 @@ export async function handleRequest(request, env = {}, _ctx = {}) {
     return handleApiRequest(request, env, url);
   }
 
+  if (BADGE_SVG_PATTERN.test(url.pathname)) {
+    return handleBadgeSvgRequest(request, env, url);
+  }
+
   if (
     url.pathname.startsWith("/metagraph/") &&
     url.pathname.endsWith(".json")
@@ -139,6 +143,98 @@ async function handleRawArtifactRequest(request, env, url) {
     status: 200,
     headers,
   });
+}
+
+// Self-hosted SVG health badges for subnet READMEs, e.g.
+// ![](https://metagraph.sh/metagraph/health/badges/7.svg) — no shields.io
+// dependency, which drives backlinks/adoption. Rendered from the badge JSON
+// artifact (label/message/color), degrading to a neutral "unavailable" badge.
+const BADGE_SVG_PATTERN = /^\/metagraph\/health\/badges\/(\d+)\.svg$/;
+const BADGE_COLOR_HEX = {
+  brightgreen: "#4c1",
+  green: "#97ca00",
+  yellowgreen: "#a4a61d",
+  yellow: "#dfb317",
+  orange: "#fe7d37",
+  red: "#e05d44",
+  blue: "#007ec6",
+  lightgrey: "#9f9f9f",
+  grey: "#555",
+};
+
+async function handleBadgeSvgRequest(request, env, url) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return errorResponse(
+      "method_not_allowed",
+      "Badges only accept GET and HEAD.",
+      405,
+      {},
+      { allow: "GET, HEAD, OPTIONS" },
+    );
+  }
+  const netuid = BADGE_SVG_PATTERN.exec(url.pathname)[1];
+  const artifact = await readArtifact(
+    env,
+    `/metagraph/health/badges/${netuid}.json`,
+  );
+  const available = artifact.ok && artifact.data;
+  const badge = available
+    ? artifact.data
+    : { label: `SN${netuid}`, message: "unavailable", color: "lightgrey" };
+  const svg = renderBadgeSvg(
+    badge.label || `SN${netuid}`,
+    badge.message || "unknown",
+    badge.color || "lightgrey",
+  );
+
+  const headers = new Headers();
+  headers.set("content-type", "image/svg+xml; charset=utf-8");
+  headers.set("access-control-allow-origin", "*");
+  headers.set("x-content-type-options", "nosniff");
+  // Real badges cache normally; the graceful fallback caches briefly so a
+  // not-yet-published subnet badge recovers quickly.
+  const maxAge = available ? CACHE_SECONDS.standard : CACHE_SECONDS.short;
+  headers.set(
+    "cache-control",
+    `public, max-age=${maxAge}, stale-while-revalidate=300`,
+  );
+  headers.set("etag", await weakEtag(svg));
+  if (request.headers.get("if-none-match") === headers.get("etag")) {
+    return new Response(null, { status: 304, headers });
+  }
+  return new Response(request.method === "HEAD" ? null : svg, {
+    status: 200,
+    headers,
+  });
+}
+
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+// Approximate text width for the 11px Verdana shields font. textLength scales
+// the glyphs to fit exactly, so the estimate only needs to look balanced.
+function badgeTextWidth(text) {
+  return Math.ceil(text.length * 6.5);
+}
+
+function renderBadgeSvg(rawLabel, rawMessage, color) {
+  const label = escapeXml(rawLabel);
+  const message = escapeXml(rawMessage);
+  const hex = BADGE_COLOR_HEX[color] || BADGE_COLOR_HEX.lightgrey;
+  const labelWidth = badgeTextWidth(rawLabel) + 10;
+  const messageWidth = badgeTextWidth(rawMessage) + 10;
+  const totalWidth = labelWidth + messageWidth;
+  const labelMid = (labelWidth / 2) * 10;
+  const messageMid = (labelWidth + messageWidth / 2) * 10;
+  const labelLen = badgeTextWidth(rawLabel) * 10;
+  const messageLen = badgeTextWidth(rawMessage) * 10;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="20" role="img" aria-label="${label}: ${message}"><title>${label}: ${message}</title><linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="r"><rect width="${totalWidth}" height="20" rx="3" fill="#fff"/></clipPath><g clip-path="url(#r)"><rect width="${labelWidth}" height="20" fill="#555"/><rect x="${labelWidth}" width="${messageWidth}" height="20" fill="${hex}"/><rect width="${totalWidth}" height="20" fill="url(#s)"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110"><text aria-hidden="true" x="${labelMid}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="${labelLen}">${label}</text><text x="${labelMid}" y="140" transform="scale(.1)" textLength="${labelLen}">${label}</text><text aria-hidden="true" x="${messageMid}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="${messageLen}">${message}</text><text x="${messageMid}" y="140" transform="scale(.1)" textLength="${messageLen}">${message}</text></g></svg>`;
 }
 
 async function handleApiRequest(request, env, url) {

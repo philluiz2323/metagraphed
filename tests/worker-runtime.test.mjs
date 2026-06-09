@@ -128,6 +128,50 @@ describe("Worker runtime", () => {
     assert.equal((await response.json()).error.code, "r2_timeout");
   });
 
+  test("renders a self-hosted SVG health badge for a subnet", async () => {
+    const response = await handleRequest(
+      new Request("https://metagraph.sh/metagraph/health/badges/7.svg"),
+      env,
+      {},
+    );
+    assert.equal(response.status, 200);
+    assert.equal(
+      response.headers.get("content-type"),
+      "image/svg+xml; charset=utf-8",
+    );
+    assert.equal(response.headers.get("access-control-allow-origin"), "*");
+    const etag = response.headers.get("etag");
+    assert.ok(etag);
+    const svg = await response.text();
+    assert.match(svg, /^<svg/);
+    assert.match(svg, /SN7/);
+
+    const cached = await handleRequest(
+      new Request("https://metagraph.sh/metagraph/health/badges/7.svg", {
+        headers: { "if-none-match": etag },
+      }),
+      env,
+      {},
+    );
+    assert.equal(cached.status, 304);
+  });
+
+  test("renders a graceful badge for a subnet without a badge artifact", async () => {
+    const response = await handleRequest(
+      new Request("https://metagraph.sh/metagraph/health/badges/99999.svg"),
+      env,
+      {},
+    );
+    assert.equal(response.status, 200);
+    assert.equal(
+      response.headers.get("content-type"),
+      "image/svg+xml; charset=utf-8",
+    );
+    const svg = await response.text();
+    assert.match(svg, /SN99999/);
+    assert.match(svg, /unavailable/);
+  });
+
   test("serves raw R2-tier artifacts from archive storage", async () => {
     const response = await handleRequest(
       new Request("https://metagraph.sh/metagraph/subnets/7.json"),

@@ -62,6 +62,13 @@ any path in the published artifact contract, with `x-metagraph-artifact-source` 
 `x-metagraph-storage-tier` headers. The enveloped `/api/v1/*` routes are preferred
 for app consumption; raw routes are convenient for static/diff tooling.
 
+## Status Badges: `/metagraph/health/badges/{netuid}.svg`
+
+`GET …/health/badges/{netuid}.svg` returns a self-hosted shields-style SVG
+(`image/svg+xml`, CORS-open, ETag/304) rendered from the badge JSON
+(`label`/`message`/`color`). It degrades to a neutral `unavailable` badge (still
+`200`) for a subnet without a published badge, so README embeds never break.
+
 ## Operational Route: `/health`
 
 `GET https://metagraph.sh/health` is a no-I/O readiness probe (not part of the
