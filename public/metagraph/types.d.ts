@@ -1936,7 +1936,7 @@ export interface components {
         };
         GeneratedOpenApiMarker: {
             /** @constant */
-            generated_at?: "2026-06-20T00:00:00.000Z";
+            generated_at?: "1970-01-01T00:00:00.000Z";
         };
         GenericArtifact: components["schemas"]["ArtifactBase"];
         /** @description Recent cross-subnet downtime incidents reconstructed from probe history; lists only surfaces that had an incident in the window. */
@@ -2398,6 +2398,7 @@ export interface components {
             [key: string]: unknown;
         });
         R2ManifestEntry: {
+            content_sha256?: string;
             content_type: string;
             key: string;
             latest_key: string;
