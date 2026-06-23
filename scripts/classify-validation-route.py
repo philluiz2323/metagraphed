@@ -44,12 +44,19 @@ submission_files = candidate_files + provider_files
 if not submission_files and not touched_community:
     scope = "normal-pr"
 else:
-    scope = "direct-provider" if len(provider_files) == 1 else "direct-candidate"
-    if len(submission_files) != 1:
+    # Mirror classifyPrScope in scripts/submission-policy.mjs: a lone candidate, a
+    # lone provider, OR an atomic provider+candidate pair (one of each) are the
+    # only in-shape direct submissions.
+    is_pair = len(candidate_files) == 1 and len(provider_files) == 1
+    if is_pair:
+        scope = "direct-pair"
+    else:
+        scope = "direct-provider" if len(provider_files) == 1 else "direct-candidate"
+    if len(submission_files) != 1 and not is_pair:
         errors.append(
             {
                 "category": "unsupported-shape",
-                "message": "direct submissions must change exactly one registry/candidates/community/*.json or registry/providers/community/*.json file",
+                "message": "direct submissions must change exactly one registry/candidates/community/*.json or registry/providers/community/*.json file, or an atomic provider+candidate pair (one of each)",
             }
         )
     unrelated = [
@@ -64,7 +71,10 @@ else:
                 "message": "direct submissions cannot change other files: " + ", ".join(unrelated),
             }
         )
-mode = "ugc" if scope in {"direct-candidate", "direct-provider"} else "full"
+# Mirror ci-validate-route.mjs: route to the light ugc preflight only for an
+# in-shape direct submission with no errors; anything errored (e.g. an unrelated
+# file → generated-artifact-tampering) must get the full validation suite.
+mode = "ugc" if scope != "normal-pr" and not errors else "full"
 report = {
     "schema_version": 1,
     "mode": mode,
