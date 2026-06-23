@@ -169,3 +169,23 @@ describe("keywordScore — non-matches and edge inputs", () => {
     assert.ok(keywordScore({ name: "x", text: "gpu" }, ["gpu"]) > 0);
   });
 });
+
+describe("keywordScore — the query cap does not truncate the document", () => {
+  // The MAX_QUERY_TERMS cap exists to bound attacker-controlled QUERY work; it
+  // must not be applied to the document side, or words past the 32nd distinct
+  // word of a field become unsearchable.
+  const long = Array.from(
+    { length: MAX_QUERY_TERMS + 8 },
+    (_, i) => `w${i}`,
+  ).join(" ");
+
+  test("a text field longer than the query cap stays fully searchable", () => {
+    const doc = { name: "X", slug: "x", text: [long] };
+    // a word before the cap matches (sanity), and one well past it must too.
+    assert.ok(score(doc, "w5") > 0);
+    assert.ok(
+      score(doc, `w${MAX_QUERY_TERMS + 3}`) > 0,
+      "word past the 32nd distinct token must still match",
+    );
+  });
+});

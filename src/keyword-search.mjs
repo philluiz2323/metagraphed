@@ -24,9 +24,11 @@ const FULL_COVERAGE_BOOST = 2;
 // and only the first bounded set is considered.
 export const MAX_QUERY_TERMS = 32;
 
-// Lowercase alphanumeric terms. Used for both the query and the document side so
-// they tokenize identically.
-export function queryTerms(query) {
+// Lowercase alphanumeric terms — the same tokenization rule for the query and the
+// document side. `max` bounds the count: callers parsing an attacker-controlled
+// query use the default (MAX_QUERY_TERMS); the document side passes Infinity so a
+// long field stays fully searchable rather than being truncated to the query cap.
+export function queryTerms(query, max = MAX_QUERY_TERMS) {
   const terms = [];
   const seen = new Set();
   for (const term of String(query ?? "")
@@ -35,16 +37,17 @@ export function queryTerms(query) {
     if (term.length === 0 || seen.has(term)) continue;
     seen.add(term);
     terms.push(term);
-    if (terms.length >= MAX_QUERY_TERMS) break;
+    if (terms.length >= max) break;
   }
   return terms;
 }
 
-// Distinct words across a list of field values (each a string or nullish).
+// Distinct words across a list of field values (each a string or nullish). The
+// query cap must not apply here — it would drop searchable words past the 32nd.
 function wordSet(values) {
   const words = new Set();
   for (const value of values) {
-    for (const word of queryTerms(value)) words.add(word);
+    for (const word of queryTerms(value, Infinity)) words.add(word);
   }
   return words;
 }
@@ -70,8 +73,8 @@ function termWeight(term, words, weight) {
 export function keywordScore({ name, slug, text } = {}, terms) {
   if (!Array.isArray(terms) || terms.length === 0) return 0;
 
-  const nameTokens = queryTerms(name);
-  const slugTokens = queryTerms(slug);
+  const nameTokens = queryTerms(name, Infinity);
+  const slugTokens = queryTerms(slug, Infinity);
   const nameWords = new Set([...nameTokens, ...slugTokens]);
   const textWords = wordSet(Array.isArray(text) ? text : [text]);
 
