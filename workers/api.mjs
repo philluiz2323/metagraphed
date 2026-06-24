@@ -3251,8 +3251,17 @@ async function handleExtrinsics(request, env, url) {
   let sql = `SELECT ${EXTRINSIC_READ_COLUMNS} FROM extrinsics`;
   const params = [];
   if (blockParam != null) {
+    // Reject a non-numeric/negative/empty block rather than silently clamping it
+    // to 0: clampInt("abc", 0, …) returns the default 0, which would quietly serve
+    // block 0's extrinsics as if that was the requested filter.
+    if (!/^\d+$/.test(blockParam)) {
+      return analyticsQueryError({
+        parameter: "block",
+        message: "block must be a non-negative integer.",
+      });
+    }
     sql += " WHERE block_number = ?";
-    params.push(clampInt(blockParam, 0, 0, Number.MAX_SAFE_INTEGER));
+    params.push(Number(blockParam));
   }
   sql += " ORDER BY block_number DESC, extrinsic_index DESC LIMIT ? OFFSET ?";
   params.push(limit, offset);

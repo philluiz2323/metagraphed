@@ -331,6 +331,29 @@ test("GET /extrinsics?block=<n> scopes the feed to one block (#1345)", async () 
   assert.ok(/WHERE block_number = \?/.test(boundSql));
 });
 
+test("GET /extrinsics?block=<non-numeric> is rejected, not silently block 0", async () => {
+  let prepared = false;
+  const env = {
+    METAGRAPH_HEALTH_DB: {
+      prepare() {
+        prepared = true;
+        return { bind: () => ({ all: async () => ({ results: [] }) }) };
+      },
+    },
+  };
+  for (const bad of ["abc", "", "-5", "1.5"]) {
+    const res = await handleRequest(
+      req(`/api/v1/extrinsics?block=${bad}`),
+      env,
+      {},
+    );
+    assert.equal(res.status, 400, `block=${bad} should be 400`);
+    assert.equal((await res.json()).error.code, "invalid_query");
+  }
+  // A malformed block must never reach D1 as a WHERE block_number = 0 query.
+  assert.equal(prepared, false);
+});
+
 test("GET /extrinsics/{hash} returns detail by extrinsic_hash (#1345)", async () => {
   const hash = `0x${"c".repeat(64)}`;
   const env = dbWith({
