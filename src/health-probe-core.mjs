@@ -62,7 +62,9 @@ const UNSAFE_HOST_PATTERNS = [
   /^0\./,
   /^::1$/,
   /^::$/,
-  /^fe80:/i,
+  // fe80::/10 link-local + fec0::/10 deprecated site-local (RFC 3879) — the whole
+  // fe80::–feff: reserved range, mirroring the webhook guard (issue #1538).
+  /^fe[89a-f][0-9a-f]:/i,
   /^fc00:/i,
   /^fd/i,
 ];
@@ -690,15 +692,21 @@ export function parseBlockNumber(header) {
     return null;
   }
   const value = header.number;
+  let block;
   if (typeof value === "number") {
-    return value;
-  }
-  if (typeof value === "string") {
-    return value.startsWith("0x")
+    block = value;
+  } else if (typeof value === "string") {
+    block = value.startsWith("0x")
       ? Number.parseInt(value, 16)
       : Number.parseInt(value, 10);
+  } else {
+    return null;
   }
-  return null;
+  // A real block height is a non-negative integer. Anything else — NaN from a
+  // malformed "0x"/"0xZZ"/empty string, or a non-finite/fractional number —
+  // is unusable and collapses to null, matching this function's other branches
+  // (and so it never leaks NaN past the `??` fallbacks downstream).
+  return Number.isInteger(block) && block >= 0 ? block : null;
 }
 
 // Bounded-concurrency map. Preserves INPUT order in the returned array (callers

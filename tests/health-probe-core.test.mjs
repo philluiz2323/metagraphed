@@ -95,6 +95,17 @@ describe("isUnsafePublicUrl", () => {
     }
   });
 
+  test("blocks fec0::/10 deprecated site-local IPv6 (issue #1538)", () => {
+    for (const url of [
+      "http://[fec0::1]/x",
+      "https://[fed0:1:2::3]/x",
+      "http://[feff::1]/x",
+      "http://[fe80::1]/x", // link-local still blocked
+    ]) {
+      assert.equal(isUnsafePublicUrl(url), true, url);
+    }
+  });
+
   test("blocks a private v4 tunnelled inside an IPv6 literal host", () => {
     for (const url of [
       "http://[::ffff:169.254.169.254]/latest", // IPv4-mapped metadata IP
@@ -964,6 +975,20 @@ describe("parseBlockNumber", () => {
   test("non-string/number number field returns null", () => {
     assert.equal(parseBlockNumber({ number: { nested: true } }), null);
     assert.equal(parseBlockNumber({}), null);
+  });
+  test("malformed numeric string returns null, not NaN", () => {
+    assert.equal(parseBlockNumber({ number: "0x" }), null);
+    assert.equal(parseBlockNumber({ number: "0xZZ" }), null);
+    assert.equal(parseBlockNumber({ number: "" }), null);
+  });
+  test("non-finite or non-integer number field returns null", () => {
+    assert.equal(parseBlockNumber({ number: NaN }), null);
+    assert.equal(parseBlockNumber({ number: Infinity }), null);
+    assert.equal(parseBlockNumber({ number: 1.5 }), null);
+  });
+  test("genesis block 0 is preserved", () => {
+    assert.equal(parseBlockNumber({ number: 0 }), 0);
+    assert.equal(parseBlockNumber({ number: "0x0" }), 0);
   });
 });
 

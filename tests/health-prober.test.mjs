@@ -94,6 +94,15 @@ describe("workerResolvedUrlSafetyGuard (DNS-aware SSRF)", () => {
     assert.equal(await guard("https://v6.example.com/x"), true);
   });
 
+  test("blocks an fec0::/10 site-local AAAA answer (issue #1538)", async () => {
+    for (const aaaa of ["fec0::1", "fed0:1:2::3", "feff::1"]) {
+      const guard = workerResolvedUrlSafetyGuard({
+        fetchImpl: dohFetch({ "evil.example.com": { AAAA: [aaaa] } }),
+      });
+      assert.equal(await guard("https://evil.example.com/x"), true, aaaa);
+    }
+  });
+
   test("blocks an AAAA answer that tunnels a private v4 (mapped/6to4/NAT64)", async () => {
     // A rebinding answer can hide a loopback/link-local target inside an IPv6
     // literal; the guard must decode the embedded v4 and block it.
@@ -1413,10 +1422,40 @@ describe("summarizeGroup / rollupStatus via per-subnet rollup", () => {
     assert.equal(subnet.status, "unknown");
     assert.equal(subnet.unknown_count, 2);
     assert.equal(subnet.avg_latency_ms, null);
-    // No surface ever went ok → lastOk stays at the 0 epoch sentinel (iso(0)),
-    // which is truthy so the `|| null` fallback does not fire.
-    assert.equal(subnet.last_ok, new Date(0).toISOString());
+    // No surface ever went ok → last_ok is null ("never"), not the 1970 epoch.
+    // (iso(0) is the truthy string "1970-01-01T00:00:00.000Z", so the old
+    // `iso(lastOk) || null` reported a fabricated last-healthy timestamp here.)
+    assert.equal(subnet.last_ok, null);
     assert.equal(subnet.last_checked, new Date(5000).toISOString());
+  });
+
+  test("a zero checked-at timestamp reports last_checked null, not the epoch", async () => {
+    // Same 0-sentinel guard as last_ok, on the last_checked field: with the
+    // clock at the Unix epoch every row's checked_at_ms is 0, so lastChecked
+    // stays 0. `iso(0)` is the truthy "1970-01-01T00:00:00.000Z", so the field
+    // must be guarded (`lastChecked ? iso(lastChecked) : null`) to report null.
+    const kv = makeKv();
+    await runHealthProber(
+      {},
+      {},
+      {
+        now: () => 0,
+        db: makeDb(),
+        kv,
+        loadSurfaces: async () => [buildSurface("z1", 13)],
+        probeSurface: async () => ({
+          status: "unknown",
+          classification: null,
+          latency_ms: null,
+        }),
+        probeOptions: {},
+      },
+    );
+    const subnet = kv
+      .json(KV_HEALTH_CURRENT)
+      .subnets.find((s) => s.netuid === 13);
+    assert.equal(subnet.last_checked, null);
+    assert.equal(subnet.last_ok, null);
   });
 
   test("mixed ok+failed subnet rolls up to degraded with avg latency", async () => {
