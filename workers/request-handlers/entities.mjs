@@ -262,6 +262,14 @@ export async function handleSubnetConcentration(request, env, netuid, url) {
   );
 }
 
+export function canonicalSubnetHistoryCachePath(url) {
+  const validationError = validateQueryParams(url, ["window"]);
+  if (validationError) return `${url.pathname}${url.search}`;
+  const { label, error } = parseHistoryWindow(url.searchParams.get("window"));
+  if (error) return `${url.pathname}${url.search}`;
+  return `${url.pathname}?window=${encodeURIComponent(label)}`;
+}
+
 export function canonicalSubnetConcentrationHistoryCachePath(url) {
   const validationError = validateQueryParams(url, ["window"]);
   if (validationError) return `${url.pathname}${url.search}`;
