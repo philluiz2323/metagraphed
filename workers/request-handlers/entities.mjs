@@ -1079,11 +1079,7 @@ export async function handleBlocks(request, env, url) {
   if (validationError) return analyticsQueryError(validationError);
   const { limit, offset, cursor } = parsePagination(url, BLOCK_PAGINATION);
   const sp = url.searchParams;
-  // Reject non-integer numeric filters with a 400 (mirrors handleExtrinsics /
-  // #2274) instead of silently coercing garbage to the clampInt default: a
-  // ?block_end=abc used to fall back to 0 and serve a wrong (block_number <= 0)
-  // result set rather than an error, and ?block_start=12.9 was silently
-  // truncated.
+  // Reject non-integer numeric filters with 400 (mirrors handleExtrinsics / #2274).
   const numericFilters = {};
   for (const param of [
     "block_start",

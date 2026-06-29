@@ -314,6 +314,7 @@ test("GET /blocks rejects non-integer numeric filters with 400 (#2310)", async (
   for (const query of [
     "block_start=abc",
     "block_end=abc",
+    "block_start=12.9",
     "from=foo",
     "to=foo",
     "min_extrinsics=1.5",
@@ -324,6 +325,7 @@ test("GET /blocks rejects non-integer numeric filters with 400 (#2310)", async (
     assert.equal(res.status, 400, query);
     const body = await res.json();
     assert.equal(body.ok, false, query);
+    assert.equal(body.error.code, "invalid_query", query);
   }
 });
 
