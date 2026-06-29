@@ -771,54 +771,54 @@ export async function handleChainActivity(request, env, url, ctx = {}) {
     env,
     "chain-activity",
     async () => {
-    const cutoff = Date.now() - days * DAY_MS;
-    // observed_at is epoch-ms; `/ 1000` (SQLite integer division) → unix seconds
-    // for strftime's 'unixepoch' UTC bucketer. Values are always bound.
-    const [extrinsicRows, blockRows] = await Promise.all([
-      d1All(
-        env,
-        `SELECT strftime('%Y-%m-%d', observed_at / 1000, 'unixepoch') AS day,
+      const cutoff = Date.now() - days * DAY_MS;
+      // observed_at is epoch-ms; `/ 1000` (SQLite integer division) → unix seconds
+      // for strftime's 'unixepoch' UTC bucketer. Values are always bound.
+      const [extrinsicRows, blockRows] = await Promise.all([
+        d1All(
+          env,
+          `SELECT strftime('%Y-%m-%d', observed_at / 1000, 'unixepoch') AS day,
                 COUNT(*) AS extrinsic_count,
                 SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS successful_extrinsics,
                 COUNT(DISTINCT signer) AS unique_signers
          FROM extrinsics
          WHERE observed_at >= ?
          GROUP BY day`,
-        [cutoff],
-      ),
-      d1All(
-        env,
-        `SELECT strftime('%Y-%m-%d', observed_at / 1000, 'unixepoch') AS day,
+          [cutoff],
+        ),
+        d1All(
+          env,
+          `SELECT strftime('%Y-%m-%d', observed_at / 1000, 'unixepoch') AS day,
                 COUNT(*) AS block_count,
                 SUM(event_count) AS event_count
          FROM blocks
          WHERE observed_at >= ?
          GROUP BY day`,
-        [cutoff],
-      ),
-    ]);
-    const meta = await readHealthMetaKv(env);
-    const data = buildChainActivity({
-      window: label,
-      observedAt: meta?.last_run_at || null,
-      extrinsicRows,
-      blockRows,
-    });
-    const response = await envelopeResponse(
-      request,
-      {
-        data,
-        meta: await analyticsMeta(
-          env,
-          "/metagraph/chain/activity.json",
-          data.observed_at,
+          [cutoff],
         ),
-      },
-      "short",
-    );
-    return hasD1FallbackRows(extrinsicRows, blockRows)
-      ? markD1FallbackResponse(response)
-      : response;
+      ]);
+      const meta = await readHealthMetaKv(env);
+      const data = buildChainActivity({
+        window: label,
+        observedAt: meta?.last_run_at || null,
+        extrinsicRows,
+        blockRows,
+      });
+      const response = await envelopeResponse(
+        request,
+        {
+          data,
+          meta: await analyticsMeta(
+            env,
+            "/metagraph/chain/activity.json",
+            data.observed_at,
+          ),
+        },
+        "short",
+      );
+      return hasD1FallbackRows(extrinsicRows, blockRows)
+        ? markD1FallbackResponse(response)
+        : response;
     },
     canonicalAnalyticsCacheRoute(url),
   );
@@ -847,55 +847,55 @@ export async function handleChainCalls(request, env, url, ctx = {}) {
     env,
     "chain-calls",
     async () => {
-    const cutoff = Date.now() - days * DAY_MS;
-    const groupCols =
-      groupBy === "module_function"
-        ? "call_module, call_function"
-        : "call_module";
-    const selectCols =
-      groupBy === "module_function"
-        ? "call_module, call_function"
-        : "call_module";
-    const [rows, totalRows] = await Promise.all([
-      d1All(
-        env,
-        `SELECT ${selectCols}, COUNT(*) AS count
+      const cutoff = Date.now() - days * DAY_MS;
+      const groupCols =
+        groupBy === "module_function"
+          ? "call_module, call_function"
+          : "call_module";
+      const selectCols =
+        groupBy === "module_function"
+          ? "call_module, call_function"
+          : "call_module";
+      const [rows, totalRows] = await Promise.all([
+        d1All(
+          env,
+          `SELECT ${selectCols}, COUNT(*) AS count
          FROM extrinsics
          WHERE observed_at >= ? AND call_module IS NOT NULL
          GROUP BY ${groupCols}
          ORDER BY count DESC
          LIMIT ?`,
-        [cutoff, limit],
-      ),
-      d1All(
-        env,
-        `SELECT COUNT(*) AS total FROM extrinsics WHERE observed_at >= ?`,
-        [cutoff],
-      ),
-    ]);
-    const meta = await readHealthMetaKv(env);
-    const data = buildChainCalls({
-      window: label,
-      groupBy,
-      observedAt: meta?.last_run_at || null,
-      total: totalRows?.[0]?.total ?? 0,
-      rows,
-    });
-    const response = await envelopeResponse(
-      request,
-      {
-        data,
-        meta: await analyticsMeta(
-          env,
-          "/metagraph/chain/calls.json",
-          data.observed_at,
+          [cutoff, limit],
         ),
-      },
-      "short",
-    );
-    return hasD1FallbackRows(rows, totalRows)
-      ? markD1FallbackResponse(response)
-      : response;
+        d1All(
+          env,
+          `SELECT COUNT(*) AS total FROM extrinsics WHERE observed_at >= ?`,
+          [cutoff],
+        ),
+      ]);
+      const meta = await readHealthMetaKv(env);
+      const data = buildChainCalls({
+        window: label,
+        groupBy,
+        observedAt: meta?.last_run_at || null,
+        total: totalRows?.[0]?.total ?? 0,
+        rows,
+      });
+      const response = await envelopeResponse(
+        request,
+        {
+          data,
+          meta: await analyticsMeta(
+            env,
+            "/metagraph/chain/calls.json",
+            data.observed_at,
+          ),
+        },
+        "short",
+      );
+      return hasD1FallbackRows(rows, totalRows)
+        ? markD1FallbackResponse(response)
+        : response;
     },
     canonicalAnalyticsCacheRoute(url, ["group_by", "limit"]),
   );

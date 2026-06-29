@@ -354,9 +354,7 @@ describe("canonicalAnalyticsCacheRoute", () => {
       "/api/v1/chain/activity?window=7d",
     );
     assert.equal(
-      canonicalAnalyticsCacheRoute(
-        url("/api/v1/chain/activity?window=7d"),
-      ),
+      canonicalAnalyticsCacheRoute(url("/api/v1/chain/activity?window=7d")),
       "/api/v1/chain/activity?window=7d",
     );
   });
