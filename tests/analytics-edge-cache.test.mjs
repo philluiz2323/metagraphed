@@ -902,4 +902,122 @@ describe("neurons-tier edge cache", () => {
       ),
     ]);
   });
+
+  test("chain activity: bare path populates cache; explicit ?window=7d is a HIT", async () => {
+    originalCaches = globalThis.caches;
+    const cache = mockCaches();
+    cache.install();
+    const queries = [];
+    const env = analyticsEnv(queries);
+    const base = "/api/v1/chain/activity";
+
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}`),
+      env,
+      ctx,
+    );
+    await Promise.resolve();
+    const queriesAfterMiss = queries.length;
+
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}?window=7d`),
+      env,
+      ctx,
+    );
+    assert.equal(
+      queries.length,
+      queriesAfterMiss,
+      "explicit ?window=7d must be a cache HIT after bare request",
+    );
+    assert.deepEqual(cache.putKeys, [
+      expectedKey("chain-activity", base, "?window=7d"),
+    ]);
+  });
+
+  test("chain activity: explicit ?window=7d populates cache; bare path is a HIT", async () => {
+    originalCaches = globalThis.caches;
+    const cache = mockCaches();
+    cache.install();
+    const queries = [];
+    const env = analyticsEnv(queries);
+    const base = "/api/v1/chain/activity";
+
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}?window=7d`),
+      env,
+      ctx,
+    );
+    await Promise.resolve();
+    const queriesAfterFirst = queries.length;
+
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}`),
+      env,
+      ctx,
+    );
+    assert.equal(
+      queries.length,
+      queriesAfterFirst,
+      "bare path must be a cache HIT after explicit ?window=7d",
+    );
+  });
+
+  test("global incidents: bare path populates cache; explicit ?window=7d is a HIT", async () => {
+    originalCaches = globalThis.caches;
+    const cache = mockCaches();
+    cache.install();
+    const queries = [];
+    const env = analyticsEnv(queries);
+    const base = "/api/v1/incidents";
+
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}`),
+      env,
+      ctx,
+    );
+    await Promise.resolve();
+    const queriesAfterMiss = queries.length;
+
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}?window=7d`),
+      env,
+      ctx,
+    );
+    assert.equal(
+      queries.length,
+      queriesAfterMiss,
+      "explicit ?window=7d must be a cache HIT after bare request",
+    );
+    assert.deepEqual(cache.putKeys, [
+      expectedKey("global-incidents", base, "?window=7d"),
+    ]);
+  });
+
+  test("global incidents: explicit ?window=7d populates cache; bare path is a HIT", async () => {
+    originalCaches = globalThis.caches;
+    const cache = mockCaches();
+    cache.install();
+    const queries = [];
+    const env = analyticsEnv(queries);
+    const base = "/api/v1/incidents";
+
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}?window=7d`),
+      env,
+      ctx,
+    );
+    await Promise.resolve();
+    const queriesAfterFirst = queries.length;
+
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}`),
+      env,
+      ctx,
+    );
+    assert.equal(
+      queries.length,
+      queriesAfterFirst,
+      "bare path must be a cache HIT after explicit ?window=7d",
+    );
+  });
 });

@@ -27,6 +27,7 @@ import { CONTRACT_VERSION } from "../src/contracts.mjs";
 import {
   ANALYTICS_WINDOW_PARAM,
   ANALYTICS_WINDOWS,
+  DEFAULT_ANALYTICS_WINDOW,
 } from "../workers/config.mjs";
 
 configureAnalytics({
@@ -344,6 +345,25 @@ describe("canonicalAnalyticsCacheRoute", () => {
     assert.equal(
       canonicalAnalyticsCacheRoute(encoded, ["limit", "call_module"]),
       canonicalAnalyticsCacheRoute(plain, ["limit", "call_module"]),
+    );
+  });
+
+  test("injects default window when window param is omitted", () => {
+    assert.equal(
+      canonicalAnalyticsCacheRoute(url("/api/v1/chain/activity")),
+      `/api/v1/chain/activity?window=${DEFAULT_ANALYTICS_WINDOW}`,
+    );
+    assert.equal(
+      canonicalAnalyticsCacheRoute(url("/api/v1/chain/activity?window=7d")),
+      `/api/v1/chain/activity?window=${DEFAULT_ANALYTICS_WINDOW}`,
+    );
+  });
+
+  test("falls back to raw search on invalid window value", () => {
+    const raw = "/api/v1/chain/fees?window=bogus&limit=10";
+    assert.equal(
+      canonicalAnalyticsCacheRoute(url(raw), ["limit", "call_module"]),
+      raw,
     );
   });
 });
