@@ -771,6 +771,7 @@ const overviewSurfacesByNetuid = groupByNetuid(surfaces);
 const endpointsByNetuid = groupByNetuid(endpointResources.endpoints);
 const candidateIndexByNetuid = groupByNetuid(candidateIndex);
 const activeCandidateIndexByNetuid = groupByNetuid(activeCandidateIndex);
+const fullVerificationByNetuid = groupByNetuid(fullVerification.results || []);
 const agentSchemaBySurfaceId = new Map(
   (schemaIndexArtifact.schemas || []).map((entry) => [entry.surface_id, entry]),
 );
@@ -1203,9 +1204,7 @@ await fs.rm(r2ArtifactDir("verification/subnets"), {
   force: true,
 });
 await mapLimit(mergedSubnets, ARTIFACT_WRITE_CONCURRENCY, async (subnet) => {
-  const results = (fullVerification.results || []).filter(
-    (result) => result.netuid === subnet.netuid,
-  );
+  const results = fullVerificationByNetuid.get(subnet.netuid) || [];
   await writeJson(artifactFile(`verification/subnets/${subnet.netuid}.json`), {
     schema_version: 1,
     contract_version: contractVersion,
@@ -1329,9 +1328,7 @@ const overviewGapsByNetuid = new Map(
 const overviewGapPriorities = groupByNetuid(
   curationReview.gap_priorities || [],
 );
-const overviewEndpointsByNetuid = groupByNetuid(endpointResources.endpoints);
 // #1002: overview counts.candidates is a per-subnet count → exclude superseded.
-const overviewCandidatesByNetuid = groupByNetuid(activeCandidateIndex);
 await fs.rm(r2ArtifactDir("overview"), { recursive: true, force: true });
 await mapLimit(mergedSubnets, ARTIFACT_WRITE_CONCURRENCY, async (subnet) => {
   const curationEntry = overviewCurationByNetuid.get(subnet.netuid);
@@ -1351,8 +1348,9 @@ await mapLimit(mergedSubnets, ARTIFACT_WRITE_CONCURRENCY, async (subnet) => {
     gaps: overviewGapsByNetuid.get(subnet.netuid)?.gaps || null,
     counts: {
       surfaces: (overviewSurfacesByNetuid.get(subnet.netuid) || []).length,
-      endpoints: (overviewEndpointsByNetuid.get(subnet.netuid) || []).length,
-      candidates: (overviewCandidatesByNetuid.get(subnet.netuid) || []).length,
+      endpoints: (endpointsByNetuid.get(subnet.netuid) || []).length,
+      candidates: (activeCandidateIndexByNetuid.get(subnet.netuid) || [])
+        .length,
     },
     gap_priorities: overviewGapPriorities.get(subnet.netuid) || [],
   });
