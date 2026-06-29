@@ -554,25 +554,25 @@ export async function handleHealthIncidents(
     env,
     "incidents",
     async () => {
-    const since = Date.now() - days * DAY_MS;
-    const [slaRows, incidentRows] = await Promise.all([
-      d1All(
-        env,
-        `SELECT MAX(surface_id) AS surface_id,
+      const since = Date.now() - days * DAY_MS;
+      const [slaRows, incidentRows] = await Promise.all([
+        d1All(
+          env,
+          `SELECT MAX(surface_id) AS surface_id,
               COALESCE(surface_key, surface_id) AS surface_key,
               COUNT(*) AS total,
               SUM(ok) AS ok_count
        FROM surface_checks
        WHERE netuid = ? AND checked_at >= ?
        GROUP BY COALESCE(surface_key, surface_id)`,
-        [netuid, since],
-      ),
-      // Gap-island grouping in SQL: collapse consecutive failures (gap <= the
-      // incident threshold) into one incident row, then cap per surface_key so
-      // one flappy endpoint cannot starve sibling surfaces in the same subnet.
-      d1All(
-        env,
-        `WITH checks AS (
+          [netuid, since],
+        ),
+        // Gap-island grouping in SQL: collapse consecutive failures (gap <= the
+        // incident threshold) into one incident row, then cap per surface_key so
+        // one flappy endpoint cannot starve sibling surfaces in the same subnet.
+        d1All(
+          env,
+          `WITH checks AS (
          SELECT COALESCE(surface_key, surface_id) AS surface_key,
                 surface_id,
                 checked_at,
@@ -621,39 +621,39 @@ export async function handleHealthIncidents(
        ) ranked
        WHERE rn <= ?
        ORDER BY surface_id, started_at`,
-        [
-          netuid,
-          since,
-          INCIDENT_GAP_MS,
-          MIN_INCIDENT_SAMPLES,
-          MAX_INCIDENT_ROWS,
-        ],
-      ),
-    ]);
-    const meta = await readHealthMetaKv(env);
-    const data = formatIncidents({
-      netuid,
-      window: label,
-      observedAt: meta?.last_run_at || null,
-      slaRows,
-      incidentRows,
-      maxIncidents: MAX_INCIDENT_ROWS,
-    });
-    const response = await envelopeResponse(
-      request,
-      {
-        data,
-        meta: await analyticsMeta(
-          env,
-          `/metagraph/health/incidents/${netuid}.json`,
-          data.observed_at,
+          [
+            netuid,
+            since,
+            INCIDENT_GAP_MS,
+            MIN_INCIDENT_SAMPLES,
+            MAX_INCIDENT_ROWS,
+          ],
         ),
-      },
-      "short",
-    );
-    return hasD1FallbackRows(slaRows, incidentRows)
-      ? markD1FallbackResponse(response)
-      : response;
+      ]);
+      const meta = await readHealthMetaKv(env);
+      const data = formatIncidents({
+        netuid,
+        window: label,
+        observedAt: meta?.last_run_at || null,
+        slaRows,
+        incidentRows,
+        maxIncidents: MAX_INCIDENT_ROWS,
+      });
+      const response = await envelopeResponse(
+        request,
+        {
+          data,
+          meta: await analyticsMeta(
+            env,
+            `/metagraph/health/incidents/${netuid}.json`,
+            data.observed_at,
+          ),
+        },
+        "short",
+      );
+      return hasD1FallbackRows(slaRows, incidentRows)
+        ? markD1FallbackResponse(response)
+        : response;
     },
     canonicalHealthWindowCachePath(url),
   );

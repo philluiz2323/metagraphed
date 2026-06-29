@@ -602,7 +602,11 @@ describe("analytics edge cache", () => {
     await Promise.resolve();
     const queriesAfterFirst = queries.length;
 
-    await handleRequest(new Request(`https://api.metagraph.sh${base}`), env, ctx);
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}`),
+      env,
+      ctx,
+    );
     assert.equal(
       queries.length,
       queriesAfterFirst,
@@ -625,7 +629,11 @@ describe("analytics edge cache", () => {
     await Promise.resolve();
     const queriesAfterFirst = queries.length;
 
-    await handleRequest(new Request(`https://api.metagraph.sh${base}`), env, ctx);
+    await handleRequest(
+      new Request(`https://api.metagraph.sh${base}`),
+      env,
+      ctx,
+    );
     assert.equal(
       queries.length,
       queriesAfterFirst,
