@@ -107,6 +107,17 @@ function canonicalAnalyticsCacheRoute(url, params = []) {
   return `${url.pathname}${query ? `?${query}` : ""}`;
 }
 
+// Normalises per-subnet health analytics URLs so a bare ?-free request and an
+// explicit ?window=7d request both resolve to the same edge-cache entry — mirrors
+// canonicalUptimeCachePath in analytics-routes.mjs.
+export function canonicalHealthWindowCachePath(url) {
+  const validationError = validateQueryParams(url, [ANALYTICS_WINDOW_PARAM]);
+  if (validationError) return `${url.pathname}${url.search}`;
+  const { label, error } = analyticsWindow(url);
+  if (error) return `${url.pathname}${url.search}`;
+  return `${url.pathname}?window=${encodeURIComponent(label)}`;
+}
+
 function analyticsWindow(url, extraParams = []) {
   const validationError = validateQueryParams(url, [
     ANALYTICS_WINDOW_PARAM,
@@ -483,41 +494,48 @@ export async function handleHealthPercentiles(
 ) {
   const { label, days, error } = analyticsWindow(url);
   if (error) return analyticsQueryError(error);
-  return withEdgeCache(request, ctx, env, "percentiles", async () => {
-    const rows = await d1All(
-      env,
-      `${rankedChecksCte("netuid = ? AND checked_at >= ?")}
+  return withEdgeCache(
+    request,
+    ctx,
+    env,
+    "percentiles",
+    async () => {
+      const rows = await d1All(
+        env,
+        `${rankedChecksCte("netuid = ? AND checked_at >= ?")}
      SELECT MAX(surface_id) AS surface_id,
             surface_key,
             ${latencyStatColumns()}
      FROM ranked
      GROUP BY surface_key
      HAVING MAX(lat_cnt) > 0`,
-      [netuid, Date.now() - days * DAY_MS],
-    );
-    const meta = await readHealthMetaKv(env);
-    const data = formatPercentiles({
-      netuid,
-      window: label,
-      observedAt: meta?.last_run_at || null,
-      rows,
-    });
-    const response = await envelopeResponse(
-      request,
-      {
-        data,
-        meta: await analyticsMeta(
-          env,
-          `/metagraph/health/percentiles/${netuid}.json`,
-          data.observed_at,
-        ),
-      },
-      "short",
-    );
-    return hasD1FallbackRows(rows)
-      ? markD1FallbackResponse(response)
-      : response;
-  });
+        [netuid, Date.now() - days * DAY_MS],
+      );
+      const meta = await readHealthMetaKv(env);
+      const data = formatPercentiles({
+        netuid,
+        window: label,
+        observedAt: meta?.last_run_at || null,
+        rows,
+      });
+      const response = await envelopeResponse(
+        request,
+        {
+          data,
+          meta: await analyticsMeta(
+            env,
+            `/metagraph/health/percentiles/${netuid}.json`,
+            data.observed_at,
+          ),
+        },
+        "short",
+      );
+      return hasD1FallbackRows(rows)
+        ? markD1FallbackResponse(response)
+        : response;
+    },
+    canonicalHealthWindowCachePath(url),
+  );
 }
 
 // SLA + reconstructed downtime incidents per surface.
@@ -530,7 +548,12 @@ export async function handleHealthIncidents(
 ) {
   const { label, days, error } = analyticsWindow(url);
   if (error) return analyticsQueryError(error);
-  return withEdgeCache(request, ctx, env, "incidents", async () => {
+  return withEdgeCache(
+    request,
+    ctx,
+    env,
+    "incidents",
+    async () => {
     const since = Date.now() - days * DAY_MS;
     const [slaRows, incidentRows] = await Promise.all([
       d1All(
@@ -631,7 +654,9 @@ export async function handleHealthIncidents(
     return hasD1FallbackRows(slaRows, incidentRows)
       ? markD1FallbackResponse(response)
       : response;
-  });
+    },
+    canonicalHealthWindowCachePath(url),
+  );
 }
 
 // Global, cross-subnet incident ledger — the same gap-island grouping as the

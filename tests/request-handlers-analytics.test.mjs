@@ -21,6 +21,7 @@ import {
   markD1FallbackResponse,
   analyticsQueryError,
   canonicalAnalyticsCacheRoute,
+  canonicalHealthWindowCachePath,
 } from "../workers/request-handlers/analytics.mjs";
 import { createLocalArtifactEnv } from "../scripts/lib.mjs";
 import { CONTRACT_VERSION } from "../src/contracts.mjs";
@@ -345,6 +346,45 @@ describe("canonicalAnalyticsCacheRoute", () => {
       canonicalAnalyticsCacheRoute(encoded, ["limit", "call_module"]),
       canonicalAnalyticsCacheRoute(plain, ["limit", "call_module"]),
     );
+  });
+});
+
+describe("canonicalHealthWindowCachePath", () => {
+  test("normalizes bare path to explicit default window", () => {
+    assert.equal(
+      canonicalHealthWindowCachePath(
+        url("/api/v1/subnets/7/health/percentiles"),
+      ),
+      "/api/v1/subnets/7/health/percentiles?window=7d",
+    );
+  });
+
+  test("explicit ?window=7d collapses to same key as bare path", () => {
+    assert.equal(
+      canonicalHealthWindowCachePath(
+        url("/api/v1/subnets/7/health/incidents?window=7d"),
+      ),
+      "/api/v1/subnets/7/health/incidents?window=7d",
+    );
+  });
+
+  test("preserves valid non-default window", () => {
+    assert.equal(
+      canonicalHealthWindowCachePath(
+        url("/api/v1/subnets/7/health/percentiles?window=30d"),
+      ),
+      "/api/v1/subnets/7/health/percentiles?window=30d",
+    );
+  });
+
+  test("falls back to raw search on unknown query param", () => {
+    const raw = "/api/v1/subnets/7/health/incidents?cacheBust=x";
+    assert.equal(canonicalHealthWindowCachePath(url(raw)), raw);
+  });
+
+  test("falls back to raw search on invalid window value", () => {
+    const raw = "/api/v1/subnets/7/health/percentiles?window=bogus";
+    assert.equal(canonicalHealthWindowCachePath(url(raw)), raw);
   });
 });
 
