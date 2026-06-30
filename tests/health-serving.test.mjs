@@ -142,6 +142,26 @@ describe("mergeRpcEndpoints", () => {
     assert.equal(merged.endpoints.find((e) => e.id === "b").status, "ok"); // no live → static
   });
 
+  test("folds unrecognized live status into unknown on the endpoint row", () => {
+    const stat = {
+      schema_version: 1,
+      endpoints: [{ id: "a", status: "ok", health_source: "probe-derived" }],
+    };
+    const live = {
+      last_run_at: "r",
+      endpoints: [
+        {
+          id: "a",
+          status: "throttled",
+          classification: "rate-limited",
+          latency_ms: 120,
+        },
+      ],
+    };
+    const a = mergeRpcEndpoints(stat, live).endpoints.find((e) => e.id === "a");
+    assert.equal(a.status, "unknown");
+  });
+
   test("a failing endpoint's observed_at is the sweep time, not its stale last_ok", () => {
     const stat = {
       schema_version: 1,
@@ -224,6 +244,21 @@ describe("overlayRpcPoolEligibility", () => {
     const out = overlayRpcPoolEligibility(pool, live);
     assert.equal(out.endpoints.find((e) => e.id === "a").pool_eligible, false);
     assert.equal(out.endpoints.find((e) => e.id === "b").pool_eligible, true);
+  });
+
+  test("folds unrecognized live status into unknown on the pool endpoint row", () => {
+    const live = {
+      endpoints: [
+        {
+          id: "a",
+          status: "throttled",
+          classification: "rate-limited",
+          consecutive_failures: 0,
+        },
+      ],
+    };
+    const out = overlayRpcPoolEligibility(pool, live);
+    assert.equal(out.endpoints.find((e) => e.id === "a").status, "unknown");
   });
 
   test("returns the static pool unchanged when live is cold", () => {
