@@ -1089,6 +1089,10 @@
           "netuid": { "type": "integer", "minimum": 0 },
           "window": { "type": ["string", "null"] },
           "source": { "type": "string" },
+          "capped": {
+            "type": "boolean",
+            "description": "Present and true only when the underlying uptime read hit MAX_UPTIME_ROWS and the oldest (possibly partial) day was dropped before aggregation. Absent when the result was not truncated."
+          },
           "reliability": {
             "oneOf": [
               { "$ref": "#/components/schemas/ReliabilityScore" },

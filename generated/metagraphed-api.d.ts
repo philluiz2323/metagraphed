@@ -5072,6 +5072,8 @@ export interface components {
             [key: string]: unknown;
         });
         UptimeArtifact: {
+            /** @description Present and true only when the underlying uptime read hit MAX_UPTIME_ROWS and the oldest (possibly partial) day was dropped before aggregation. Absent when the result was not truncated. */
+            capped?: boolean;
             netuid: number;
             reliability?: components["schemas"]["ReliabilityScore"] | null;
             schema_version: number;
@@ -17904,6 +17906,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "data": {
+                     *         "capped": false,
                      *         "netuid": 7,
                      *         "reliability": {
                      *           "avg_latency_ms": 120,
