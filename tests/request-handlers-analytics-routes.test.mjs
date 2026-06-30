@@ -18,6 +18,7 @@ import {
   handleTrajectory,
   handleUptime,
 } from "../workers/request-handlers/analytics-routes.mjs";
+import { MAX_UPTIME_ROWS } from "../workers/config.mjs";
 
 const NETUID = 7;
 const OBSERVED_AT = "2026-06-24T12:00:00.000Z";
@@ -231,6 +232,28 @@ describe("handleEconomicsTrends", () => {
 });
 
 describe("handleUptime", () => {
+  function uptimeRows(count) {
+    const rows = Array.from({ length: count - 1 }, (_, i) => ({
+      surface_id: `sn-7-surface-${i}`,
+      surface_key: `surface-${i}`,
+      day: "2026-06-02",
+      samples: 1,
+      ok_count: 1,
+      uptime_ratio: 1,
+      status: "ok",
+    }));
+    rows.push({
+      surface_id: "sn-7-oldest",
+      surface_key: "oldest",
+      day: "2026-06-01",
+      samples: 1,
+      ok_count: 0,
+      uptime_ratio: 0,
+      status: "failed",
+    });
+    return rows;
+  }
+
   test("defaults window to 90d and returns empty surfaces on cold D1", async () => {
     const body = await json(
       await handleUptime(
@@ -288,6 +311,34 @@ describe("handleUptime", () => {
     assert.equal(body.data.surfaces.length, 1);
     assert.equal(body.data.surfaces[0].surface_id, "sn-7-acme-subnet-api");
     assert.equal(body.data.surfaces[0].days[0].uptime_ratio, 0.9);
+  });
+
+  test("does not set capped when the D1 read exactly reaches MAX_UPTIME_ROWS", async () => {
+    const rows = uptimeRows(MAX_UPTIME_ROWS);
+    const env = d1Env({ "FROM surface_uptime_daily": rows });
+    const body = await json(
+      await handleUptime(req("/"), env, NETUID, url("/?window=1y")),
+    );
+    assert.equal(body.data.capped, undefined);
+    assert.equal(body.data.window, "1y");
+    const days = body.data.surfaces.flatMap((surface) =>
+      surface.days.map((day) => day.day),
+    );
+    assert.ok(days.includes("2026-06-01"));
+  });
+
+  test("sets capped when the D1 read returns a sentinel row and drops the oldest day", async () => {
+    const rows = uptimeRows(MAX_UPTIME_ROWS + 1);
+    const env = d1Env({ "FROM surface_uptime_daily": rows });
+    const body = await json(
+      await handleUptime(req("/"), env, NETUID, url("/?window=1y")),
+    );
+    assert.equal(body.data.capped, true);
+    assert.equal(body.data.window, "1y");
+    const days = body.data.surfaces.flatMap((surface) =>
+      surface.days.map((day) => day.day),
+    );
+    assert.ok(!days.includes("2026-06-01"));
   });
 });
 

@@ -175,15 +175,18 @@ export async function handleUptime(request, env, netuid, url) {
      GROUP BY COALESCE(surface_key, surface_id), day
      ORDER BY day DESC
      LIMIT ?`,
-    [netuid, cutoff, MAX_UPTIME_ROWS],
+    [netuid, cutoff, MAX_UPTIME_ROWS + 1],
   );
+  const capped = rows.length > MAX_UPTIME_ROWS;
+  const visibleRows = capped ? rows.slice(0, MAX_UPTIME_ROWS) : rows;
   const healthMeta = await readHealthMetaKv(env);
   const data = formatUptime({
     netuid,
     window: windowParam,
     observedAt: healthMeta?.last_run_at || null,
-    rows,
+    rows: visibleRows,
     now: new Date().toISOString(),
+    capped,
   });
   return envelopeWithD1Fallback(
     request,
@@ -196,7 +199,7 @@ export async function handleUptime(request, env, netuid, url) {
       ),
     },
     "short",
-    [rows],
+    [visibleRows],
   );
 }
 

@@ -1085,13 +1085,28 @@ export function formatUptime({
   netuid,
   window,
   observedAt = null,
-  rows,
+  rows: rawRows,
   now = null,
+  capped = false,
 }) {
+  // When the D1 read hit MAX_UPTIME_ROWS the oldest day in the result may be a
+  // partial surface×day slice — drop it (mirrors buildConcentrationHistory).
+  let rows = rawRows || [];
+  if (capped && rows.length > 0) {
+    const days = [
+      ...new Set(
+        rows.map((row) => row?.day).filter((day) => typeof day === "string"),
+      ),
+    ].sort();
+    if (days.length > 1) {
+      const oldest = days[0];
+      rows = rows.filter((row) => row?.day !== oldest);
+    }
+  }
   // computeReliability keys per-surface aggregation on the stable surface_key
   // itself (falling back to surface_id), so renamed rows already collapse into
   // one bucket — no need to pre-rewrite surface_id here.
-  const reliability = computeReliability(rows || [], {
+  const reliability = computeReliability(rows, {
     window: window || null,
     now,
   });
@@ -1156,6 +1171,7 @@ export function formatUptime({
     source: "live-cron-prober",
     reliability: reliability.subnet,
     surfaces,
+    ...(capped ? { capped: true } : {}),
   };
 }
 

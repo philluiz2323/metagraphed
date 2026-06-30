@@ -2253,6 +2253,34 @@ describe("formatUptime (daily uptime history)", () => {
     assert.equal(out.reliability.surface_count, 1);
   });
 
+  test("drops the oldest day and sets capped when the D1 read hit the row cap", () => {
+    const out = formatUptime({
+      netuid: 7,
+      window: "1y",
+      capped: true,
+      rows: [
+        {
+          surface_id: "a",
+          day: "2026-06-02",
+          samples: 10,
+          ok_count: 10,
+          status: "ok",
+        },
+        {
+          surface_id: "a",
+          day: "2026-06-01",
+          samples: 10,
+          ok_count: 5,
+          status: "degraded",
+        },
+      ],
+    });
+    assert.equal(out.capped, true);
+    assert.equal(out.surfaces.length, 1);
+    assert.equal(out.surfaces[0].day_count, 1);
+    assert.equal(out.surfaces[0].days[0].day, "2026-06-02");
+  });
+
   test("returns an empty series + null reliability for no rows", () => {
     const out = formatUptime({ netuid: 7, window: "1y", rows: [] });
     assert.deepEqual(out.surfaces, []);
