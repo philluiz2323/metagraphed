@@ -129,6 +129,17 @@ describe("metagraph-neurons builders", () => {
     assert.equal(n.dividends, 0.02);
   });
 
+  test("formatNeuron nulls invalid or absent ratio cells", () => {
+    const n = formatNeuron({
+      rank: null,
+      trust: "not-a-number",
+      validator_trust: undefined,
+    });
+    assert.equal(n.rank, null);
+    assert.equal(n.trust, null);
+    assert.equal(n.validator_trust, null);
+  });
+
   test("formatNeuron rounds stake_tao / emission_tao to rao precision (no IEEE-754 leak)", () => {
     // Regression for the Gittensory Orb follow-up blocker on #2503: stake_tao /
     // emission_tao must be rounded to 1e-9 (rao) precision so a noisy REAL
