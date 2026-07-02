@@ -118,7 +118,7 @@ test("GET /accounts/{ss58} returns a cross-subnet summary (#1347)", async () => 
   assert.equal(body.data.recent_events[0].event_kind, "StakeAdded");
 });
 
-test("GET /accounts/{ss58}/events returns paginated history + kind filter (#1347)", async () => {
+test("GET /accounts/{ss58}/events returns paginated history + kind/netuid filters (#1347)", async () => {
   const env = dbWith({
     events: [
       {
@@ -135,7 +135,7 @@ test("GET /accounts/{ss58}/events returns paginated history + kind filter (#1347
     ],
   });
   const res = await handleRequest(
-    req(`/api/v1/accounts/${SS58}/events?limit=50&kind=StakeRemoved`),
+    req(`/api/v1/accounts/${SS58}/events?limit=50&kind=StakeRemoved&netuid=7`),
     env,
     {},
   );
@@ -144,12 +144,22 @@ test("GET /accounts/{ss58}/events returns paginated history + kind filter (#1347
   assert.equal(body.data.ss58, SS58);
   assert.equal(Array.isArray(body.data.events), true);
   assert.equal(body.data.events[0].event_kind, "StakeRemoved");
+  assert.equal(body.data.events[0].netuid, 7);
   assert.equal(body.data.limit, 50);
 });
 
 test("GET /accounts/{ss58}/events rejects an unsupported query param", async () => {
   const res = await handleRequest(
     req(`/api/v1/accounts/${SS58}/events?bogus=1`),
+    {},
+    {},
+  );
+  assert.equal(res.status, 400);
+});
+
+test("GET /accounts/{ss58}/events rejects malformed netuid", async () => {
+  const res = await handleRequest(
+    req(`/api/v1/accounts/${SS58}/events?netuid=nope`),
     {},
     {},
   );

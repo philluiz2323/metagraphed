@@ -770,6 +770,7 @@ export async function handleAccount(request, env, ss58) {
 export async function handleAccountEvents(request, env, ss58, url) {
   const validationError = validateQueryParams(url, [
     "kind",
+    "netuid",
     "block_start",
     "block_end",
     "limit",
@@ -791,11 +792,17 @@ export async function handleAccountEvents(request, env, ss58, url) {
     "block_end",
   );
   if (blockEnd.error) return analyticsQueryError(blockEnd.error);
+  const netuid = parseNonNegativeIntParam(
+    url.searchParams.get("netuid"),
+    "netuid",
+  );
+  if (netuid.error) return analyticsQueryError(netuid.error);
   const data = await loadAccountEvents(d1Runner(env), ss58, {
     limit: url.searchParams.get("limit"),
     offset: url.searchParams.get("offset"),
     kind: url.searchParams.get("kind"),
     cursor: url.searchParams.get("cursor"),
+    netuid: netuid.value,
     blockStart: blockStart.value,
     blockEnd: blockEnd.value,
   });

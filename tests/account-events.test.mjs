@@ -1160,6 +1160,45 @@ test("loadAccountEvents applies the ?kind filter as a bound param", async () => 
   ]);
 });
 
+test("loadAccountEvents applies the ?netuid filter as a bound param", async () => {
+  let captured;
+  await loadAccountEvents(
+    async (sql, params) => {
+      captured = { sql, params };
+      return [];
+    },
+    "5Hk",
+    { netuid: 19 },
+  );
+  assert.ok(/AND netuid = \?/.test(captured.sql));
+  assert.deepEqual(captured.params, ["5Hk", 19, "5Hk", "5Hk", 19, 100, 0]);
+});
+
+test("loadAccountEvents composes ?kind and ?netuid filters together", async () => {
+  let captured;
+  await loadAccountEvents(
+    async (sql, params) => {
+      captured = { sql, params };
+      return [];
+    },
+    "5Hk",
+    { kind: "StakeAdded", netuid: 19 },
+  );
+  assert.ok(/AND event_kind = \?/.test(captured.sql));
+  assert.ok(/AND netuid = \?/.test(captured.sql));
+  assert.deepEqual(captured.params, [
+    "5Hk",
+    "StakeAdded",
+    19,
+    "5Hk",
+    "5Hk",
+    "StakeAdded",
+    19,
+    100,
+    0,
+  ]);
+});
+
 test("loadAccountEvents short-circuits an inverted block range before D1", async () => {
   let called = false;
   const out = await loadAccountEvents(
