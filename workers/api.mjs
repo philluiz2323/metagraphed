@@ -2755,6 +2755,9 @@ async function handleApiRequest(
       request,
       transformed.meta.projection?.fields,
       linkValue ? { link: linkValue } : {},
+      {
+        stream: matched.id === "endpoints" || matched.id === "subnet-endpoints",
+      },
     );
   }
   // Real publish time from the KV latest pointer (null until a publish has
