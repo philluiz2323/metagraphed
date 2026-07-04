@@ -36,13 +36,15 @@ def _http_error(code):
 class PushAuthFatalTest(unittest.TestCase):
     def test_401_exits_instead_of_retrying(self):
         with patch.object(_se.urllib.request, "urlopen", side_effect=_http_error(401)):
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(SystemExit) as cm:
                 _se.push("https://api.metagraph.sh/api/v1/internal/events", {})
+        self.assertEqual(cm.exception.code, 1)
 
     def test_403_exits_instead_of_retrying(self):
         with patch.object(_se.urllib.request, "urlopen", side_effect=_http_error(403)):
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(SystemExit) as cm:
                 _se.push("https://api.metagraph.sh/api/v1/internal/events", {})
+        self.assertEqual(cm.exception.code, 1)
 
     def test_other_http_error_is_transient_not_fatal(self):
         with patch.object(_se.urllib.request, "urlopen", side_effect=_http_error(500)):
