@@ -49,6 +49,12 @@ function toInt(value) {
   return null;
 }
 
+function toTimestamp(value) {
+  const ms = toInt(value);
+  if (ms == null) return null;
+  return Number.isFinite(new Date(ms).getTime()) ? ms : null;
+}
+
 // A nullable count cell (extrinsic_count / event_count) coerced to a finite,
 // non-negative integer, defaulting to 0 — a block with an absent count carried 0
 // of that thing, which must not poison the totals or the mean.
@@ -96,7 +102,7 @@ export function buildBlocksSummary(rows) {
     if (blockNumber == null) continue;
     blocks.push({
       block_number: blockNumber,
-      observed_at: toInt(row?.observed_at),
+      observed_at: toTimestamp(row?.observed_at),
       author: typeof row?.author === "string" && row.author ? row.author : null,
       extrinsic_count: toCount(row?.extrinsic_count),
       event_count: toCount(row?.event_count),

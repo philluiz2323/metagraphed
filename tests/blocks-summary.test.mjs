@@ -174,6 +174,18 @@ describe("buildBlocksSummary", () => {
     assert.equal(out.block_time, null);
   });
 
+  test("drops out-of-range observed_at cells instead of throwing", () => {
+    const observed = 1_750_000_000_000;
+    const out = buildBlocksSummary([
+      { block_number: 1, observed_at: "8640000000000001" },
+      { block_number: 2, observed_at: observed },
+    ]);
+    assert.equal(out.block_count, 2);
+    assert.equal(out.first_observed_at, new Date(observed).toISOString());
+    assert.equal(out.last_observed_at, new Date(observed).toISOString());
+    assert.equal(out.block_time, null);
+  });
+
   test("cold/empty store → schema-stable zeroed card", () => {
     const out = buildBlocksSummary([]);
     assert.equal(out.block_count, 0);
