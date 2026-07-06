@@ -1311,21 +1311,40 @@ function isoFromMs(ms) {
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
+// D1 can hand the INTEGER netuid column back as a numeric string here. Accept
+// ONLY a real integer >= 0 or an all-digits string (rejecting "1e3"/"0x10"
+// Number() coercions and an oversized digit run that can't round-trip exactly,
+// matching subnet-identity-history.mjs's rowNetuid, #2938) so a blank/null/
+// non-numeric cell is dropped rather than read as valid subnet 0.
+function normalizedNetuid(value) {
+  if (typeof value === "number") {
+    return Number.isInteger(value) && value >= 0 ? value : null;
+  }
+  if (typeof value === "string" && /^\d+$/.test(value)) {
+    const netuid = Number(value);
+    return Number.isSafeInteger(netuid) ? netuid : null;
+  }
+  return null;
+}
+
 function liveFromD1Rows(rows) {
-  const surfaces = rows.map((r) => ({
-    surface_id: r.surface_id,
-    surface_key: r.surface_key ?? null,
-    netuid: r.netuid,
-    kind: r.kind,
-    provider: r.provider,
-    url: r.url,
-    status: normalizeProbeStatus(r.status),
-    classification: r.classification,
-    latency_ms: Number.isFinite(r.latency_ms) ? r.latency_ms : null,
-    status_code: Number.isInteger(r.status_code) ? r.status_code : null,
-    last_checked: isoFromMs(r.last_checked),
-    last_ok: isoFromMs(r.last_ok),
-  }));
+  const surfaces = rows
+    .map((r) => ({ ...r, netuid: normalizedNetuid(r.netuid) }))
+    .filter((r) => r.netuid != null)
+    .map((r) => ({
+      surface_id: r.surface_id,
+      surface_key: r.surface_key ?? null,
+      netuid: r.netuid,
+      kind: r.kind,
+      provider: r.provider,
+      url: r.url,
+      status: normalizeProbeStatus(r.status),
+      classification: r.classification,
+      latency_ms: Number.isFinite(r.latency_ms) ? r.latency_ms : null,
+      status_code: Number.isInteger(r.status_code) ? r.status_code : null,
+      last_checked: isoFromMs(r.last_checked),
+      last_ok: isoFromMs(r.last_ok),
+    }));
   const byNetuid = new Map();
   for (const row of surfaces) {
     const group = byNetuid.get(row.netuid) || [];

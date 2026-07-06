@@ -1369,6 +1369,77 @@ describe("resolveLiveHealth (KV → D1 → null)", () => {
     assert.match(live.surfaces[0].last_ok, /^20\d\d-/);
   });
 
+  test("D1 fallback coerces string netuids, groups + sorts subnets, and nulls bad status_code/latency_ms", async () => {
+    // D1 hands the INTEGER netuid column back as "7" on this read path; the
+    // emitted netuid both keys the per-subnet summary Map and rides into the
+    // response, so a raw string would splinter one subnet's rows across two
+    // group keys. A blank cell must be dropped, not coerced to subnet 0.
+    const netuidRow = (surfaceId, netuid, extra = {}) => ({
+      surface_id: surfaceId,
+      surface_key: `srf-${surfaceId}`,
+      netuid,
+      kind: "subnet-api",
+      provider: "p",
+      url: "https://p",
+      status: "ok",
+      classification: "up",
+      latency_ms: 10,
+      status_code: 200,
+      last_checked: 1_700_000_000_000,
+      last_ok: 1_700_000_000_000,
+      ...extra,
+    });
+    const db = d1With([
+      netuidRow("7:subnet-api:a", "7"),
+      // A non-integer status_code and a non-finite latency_ms from D1 must both
+      // coerce to null (never ship a bad number), exercising the else branch of
+      // each guard on a row that survives the netuid filter.
+      netuidRow("7:subnet-api:b", 7, { status_code: null, latency_ms: "nope" }),
+      // A second, lower-numbered subnet so the per-subnet summary sort runs and
+      // orders subnet 3 ahead of subnet 7 (single-group input never calls it).
+      netuidRow("3:subnet-api:c", "3"),
+      netuidRow("dropped:blank", ""),
+      netuidRow("dropped:null", null),
+      netuidRow("dropped:negative", -1),
+      netuidRow("dropped:non-integer", 7.5),
+      netuidRow("dropped:non-digit-string", "abc"),
+      netuidRow("dropped:exponential-string", "1e3"),
+      // A digit run that can't round-trip through Number() exactly (loses
+      // precision past MAX_SAFE_INTEGER) must be dropped, not silently rounded
+      // into a different, wrong netuid.
+      netuidRow("dropped:unsafe-integer-string", "99999999999999999999"),
+    ]);
+    const live = await resolveLiveHealth({
+      readHealthKv: async () => null,
+      env: {},
+      db,
+      now: () => 1_700_000_600_000,
+    });
+    assert.deepEqual(
+      live.surfaces.map((s) => s.surface_id),
+      ["7:subnet-api:a", "7:subnet-api:b", "3:subnet-api:c"],
+    );
+    // Every returned surface has the coerced numeric netuid, not just the first
+    // — the bug involved mixed row types landing in the same response.
+    assert.deepEqual(
+      live.surfaces.map((s) => s.netuid),
+      [7, 7, 3],
+    );
+    assert.equal(typeof live.surfaces[0].netuid, "number");
+    // The bad status_code/latency_ms row is nulled out, not shipped as-is.
+    const nulled = live.surfaces.find((s) => s.surface_id === "7:subnet-api:b");
+    assert.equal(nulled.status_code, null);
+    assert.equal(nulled.latency_ms, null);
+    // Both netuid-7 rows land in the SAME group; the summary is sorted ascending
+    // by netuid, so subnet 3 leads subnet 7.
+    assert.deepEqual(
+      live.subnets.map((s) => s.netuid),
+      [3, 7],
+    );
+    assert.equal(live.subnets.find((s) => s.netuid === 7).surface_count, 2);
+    assert.equal(live.subnets.find((s) => s.netuid === 3).surface_count, 1);
+  });
+
   test("D1 fallback folds unrecognized surface status into unknown in global status_counts", async () => {
     const now = 1_700_000_600_000;
     const db = {
