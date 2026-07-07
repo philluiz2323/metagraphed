@@ -8,6 +8,7 @@ import {
   formatTrends,
   mergeFreshness,
   mergeRpcEndpoints,
+  normalizedNetuid,
   overlayArtifactEndpoints,
   overlayCatalogDetail,
   overlayCatalogIndex,
@@ -1247,6 +1248,32 @@ describe("worker live health serving", () => {
     const body = await res.json();
     assert.equal(body.data.pools[0].endpoints[0].pool_eligible, true);
   });
+});
+
+describe("normalizedNetuid", () => {
+  // Table-driven, one row per branch, so a coverage gap or a regression on any
+  // single case is immediately localized (rather than inferred indirectly
+  // through the D1-fallback integration test below).
+  const cases = [
+    ["a positive integer", 7, 7],
+    ["zero", 0, 0],
+    ["a negative integer", -1, null],
+    ["a non-integer number", 7.5, null],
+    ["an all-digits string", "7", 7],
+    ["a blank string", "", null],
+    ["a non-digit string", "abc", null],
+    ["an exponential-notation string", "1e3", null],
+    ["a hex-notation string", "0x10", null],
+    ["a digit string too large to round-trip exactly", "99999999999999999999", null],
+    ["null", null, null],
+    ["undefined", undefined, null],
+    ["a boolean", false, null],
+  ];
+  for (const [label, input, expected] of cases) {
+    test(`${label} -> ${expected}`, () => {
+      assert.equal(normalizedNetuid(input), expected);
+    });
+  }
 });
 
 describe("resolveLiveHealth (KV → D1 → null)", () => {

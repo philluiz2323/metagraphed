@@ -1316,7 +1316,7 @@ function isoFromMs(ms) {
 // Number() coercions and an oversized digit run that can't round-trip exactly,
 // matching subnet-identity-history.mjs's rowNetuid, #2938) so a blank/null/
 // non-numeric cell is dropped rather than read as valid subnet 0.
-function normalizedNetuid(value) {
+export function normalizedNetuid(value) {
   if (typeof value === "number") {
     return Number.isInteger(value) && value >= 0 ? value : null;
   }
@@ -1328,23 +1328,23 @@ function normalizedNetuid(value) {
 }
 
 function liveFromD1Rows(rows) {
-  const surfaces = rows
-    .map((r) => ({ ...r, netuid: normalizedNetuid(r.netuid) }))
-    .filter((r) => r.netuid != null)
-    .map((r) => ({
-      surface_id: r.surface_id,
-      surface_key: r.surface_key ?? null,
-      netuid: r.netuid,
-      kind: r.kind,
-      provider: r.provider,
-      url: r.url,
-      status: normalizeProbeStatus(r.status),
-      classification: r.classification,
-      latency_ms: Number.isFinite(r.latency_ms) ? r.latency_ms : null,
-      status_code: Number.isInteger(r.status_code) ? r.status_code : null,
-      last_checked: isoFromMs(r.last_checked),
-      last_ok: isoFromMs(r.last_ok),
-    }));
+  const mapped = rows.map((r) => ({
+    surface_id: r.surface_id,
+    surface_key: r.surface_key ?? null,
+    netuid: normalizedNetuid(r.netuid),
+    kind: r.kind,
+    provider: r.provider,
+    url: r.url,
+    status: normalizeProbeStatus(r.status),
+    classification: r.classification,
+    latency_ms: Number.isFinite(r.latency_ms) ? r.latency_ms : null,
+    status_code: Number.isInteger(r.status_code) ? r.status_code : null,
+    last_checked: isoFromMs(r.last_checked),
+    last_ok: isoFromMs(r.last_ok),
+  }));
+  // Drop any row whose D1 netuid cell didn't survive coercion, before it can
+  // reach the per-subnet grouping below or the response.
+  const surfaces = mapped.filter((r) => r.netuid != null);
   const byNetuid = new Map();
   for (const row of surfaces) {
     const group = byNetuid.get(row.netuid) || [];
