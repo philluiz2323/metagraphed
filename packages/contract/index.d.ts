@@ -266,7 +266,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Fetch one account's stake-movement (re-delegation) footprint per subnet over a recent window (7d/30d/90d): each subnet's StakeMoved count with the first and last movement timestamps, plus account totals, an HHI concentration of where its re-delegation churn is focused, and the dominant subnet — summed live from the account_events D1 tier. The account-level companion to GET /api/v1/chain/stake-moves and GET /api/v1/subnets/{netuid}/stake-moves, distinct from net capital flow in GET /api/v1/accounts/{ss58}/stake-flow. */
+        /** Fetch one account's stake-movement (re-delegation) footprint per subnet over a recent window (7d/30d/90d): each subnet's StakeMoved count with the first and last movement timestamps and the alpha price on the day of the most recent move (from the daily subnet_snapshots rollup), plus account totals, an HHI concentration of where its re-delegation churn is focused, and the dominant subnet — summed live from the account_events D1 tier. The account-level companion to GET /api/v1/chain/stake-moves and GET /api/v1/subnets/{netuid}/stake-moves, distinct from net capital flow in GET /api/v1/accounts/{ss58}/stake-flow. */
         get: operations["accountStakeMoves"];
         put?: never;
         post?: never;
@@ -2962,7 +2962,7 @@ export interface components {
             /** @enum {string|null} */
             window: "7d" | "30d" | "90d" | null;
         };
-        /** @description One account's stake-movement (re-delegation) footprint per subnet over a recent window, from the account_events StakeMoved stream: per-subnet movement count with the first/last movement timestamps, plus account totals, an HHI concentration of where its re-delegation churn is focused, and the dominant subnet. The account-level companion to /api/v1/chain/stake-moves and /api/v1/subnets/{netuid}/stake-moves, distinct from net capital flow in /accounts/{ss58}/stake-flow. */
+        /** @description One account's stake-movement (re-delegation) footprint per subnet over a recent window, from the account_events StakeMoved stream: per-subnet movement count with the first/last movement timestamps, the alpha price on the day of the most recent move (from the daily subnet_snapshots rollup — a known daily-granularity precision limit, not a bug), plus account totals, an HHI concentration of where its re-delegation churn is focused, and the dominant subnet. The account-level companion to /api/v1/chain/stake-moves and /api/v1/subnets/{netuid}/stake-moves, distinct from net capital flow in /accounts/{ss58}/stake-flow. */
         AccountStakeMovesArtifact: {
             address: string;
             concentration: number | null;
@@ -2976,6 +2976,7 @@ export interface components {
                 last_moved_at: string | null;
                 movements: number;
                 netuid: number;
+                price_tao_at_last_move: number | null;
             }[];
             total_movements: number;
             /** @enum {string|null} */
@@ -9575,7 +9576,8 @@ export interface operations {
                      *             "first_moved_at": "2026-06-01T00:00:00.000Z",
                      *             "last_moved_at": "2026-06-01T00:00:00.000Z",
                      *             "movements": 4,
-                     *             "netuid": 1
+                     *             "netuid": 1,
+                     *             "price_tao_at_last_move": 4.5
                      *           }
                      *         ],
                      *         "total_movements": 4,
