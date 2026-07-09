@@ -13,6 +13,7 @@ import { QueryErrorBoundary } from "@/components/metagraphed/error-boundary";
 import { StatTile } from "@/components/metagraphed/charts/stat-tile";
 import { Sparkline } from "@/components/metagraphed/charts/sparkline";
 import { BarMini } from "@/components/metagraphed/charts/bar-mini";
+import { Donut, type DonutSegment } from "@/components/metagraphed/charts/donut";
 import { ListShell, LoadMore } from "@/components/metagraphed/list-shell";
 import { SearchInput } from "@/components/metagraphed/table-controls";
 import { TimeAgo } from "@/components/metagraphed/time-ago";
@@ -174,57 +175,71 @@ function CallMixSection({ calls }: { calls: ChainCalls }) {
     (c) => c.call_function != null && (selected == null || c.call_module === selected),
   );
 
+  const chartPalette = [
+    "var(--chart-1)",
+    "var(--chart-2)",
+    "var(--chart-3)",
+    "var(--chart-4)",
+    "var(--chart-5)",
+    "var(--chart-6)",
+  ];
+  const moduleSegs: DonutSegment[] = modules.map((c, i) => ({
+    label: c.call_module,
+    value: c.count,
+    color: chartPalette[i % chartPalette.length]!,
+  }));
+
   return (
     <section className="rounded-lg border border-border bg-card p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
           Call mix
         </h2>
-        <span className="font-mono text-[11px] text-ink-muted">
-          {formatNumber(calls.total_extrinsics)} calls
-        </span>
       </div>
       {modules.length > 0 ? (
         <div className="space-y-4">
-          <ul className="space-y-1.5">
-            {modules.map((c) => {
-              const cap = Math.max(1, ...modules.map((m) => m.count));
-              const pct = Math.max(2, Math.round((c.count / cap) * 100));
-              const active = selected === c.call_module;
-              return (
-                <li key={c.call_module}>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(active ? null : c.call_module)}
-                    className="grid w-full grid-cols-[7rem_1fr_auto] items-center gap-2 text-left"
-                    aria-pressed={active}
-                  >
-                    <span
-                      className={
-                        active
-                          ? "truncate font-mono text-[10px] uppercase tracking-widest text-accent"
-                          : "truncate font-mono text-[10px] uppercase tracking-widest text-ink-muted"
-                      }
+          <div className="flex items-center gap-4">
+            <Donut
+              segments={moduleSegs}
+              size={88}
+              strokeWidth={11}
+              centerLabel={formatNumber(calls.total_extrinsics)}
+              centerSub="calls"
+            />
+            <ul className="min-w-0 flex-1 space-y-1">
+              {moduleSegs.map((s) => {
+                const active = selected === s.label;
+                return (
+                  <li key={s.label}>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(active ? null : s.label)}
+                      className="flex w-full items-center gap-2 text-left"
+                      aria-pressed={active}
                     >
-                      {c.call_module}
-                    </span>
-                    <span className="relative h-1.5 overflow-hidden rounded-full bg-surface">
                       <span
-                        className="absolute inset-y-0 left-0 rounded-full"
-                        style={{
-                          width: `${pct}%`,
-                          background: active ? "var(--accent)" : "var(--chart-1)",
-                        }}
+                        aria-hidden
+                        className="inline-block size-2 shrink-0 rounded-sm"
+                        style={{ background: s.color }}
                       />
-                    </span>
-                    <span className="font-mono text-[10px] tabular-nums text-ink-strong">
-                      {formatNumber(c.count)}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                      <span
+                        className={
+                          active
+                            ? "truncate font-mono text-[10px] uppercase tracking-widest text-accent"
+                            : "truncate font-mono text-[10px] uppercase tracking-widest text-ink-muted"
+                        }
+                      >
+                        {s.label}
+                      </span>
+                      <span className="ml-auto font-mono text-[10px] tabular-nums text-ink-strong">
+                        {formatNumber(s.value)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
           {functions.length > 0 ? (
             <div className="border-t border-border pt-3">
