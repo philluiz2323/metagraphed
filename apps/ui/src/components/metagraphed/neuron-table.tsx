@@ -181,7 +181,7 @@ export function NeuronTable({
                     {onSelect ? (
                       <button
                         type="button"
-                        className="underline decoration-border underline-offset-2 hover:text-accent hover:decoration-accent"
+                        className="underline underline-offset-2 hover:text-accent"
                         onClick={() => onSelect(n.uid)}
                       >
                         {n.uid}
