@@ -380,8 +380,7 @@ function SubnetsTable({ view, density = "comfortable" }: { view: ViewMode; densi
         // are agent-catalog service_kinds; "docs" has no service_kinds entry (a
         // docs page isn't a callable service) so it checks the row's own
         // docs_url instead — this is the one case service_kinds can't answer.
-        if (search.kind === "api" && !(s.service_kinds ?? []).includes("subnet-api"))
-          return false;
+        if (search.kind === "api" && !(s.service_kinds ?? []).includes("subnet-api")) return false;
         if (search.kind === "sse" && !(s.service_kinds ?? []).includes("sse")) return false;
         if (search.kind === "docs" && !s.docs_url) return false;
         // Mega-menu "Stale > 24h" link: same threshold as the label, using the
