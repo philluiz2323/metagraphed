@@ -21,6 +21,18 @@ export const ROUTE_CSV_EXAMPLES = {
     "snapshot_date,neuron_count,validator_count,yield_count,subnet_yield,mean_yield,median_yield,p25_yield,p75_yield,p90_yield",
     "2026-06-27,2,1,2,0.075,0.075,0.075,0.05,0.1,0.1",
   ].join("\r\n"),
+  "subnet-performance-history": [
+    "snapshot_date,neuron_count,validator_count,active_count,incentive_gini,incentive_nakamoto_coefficient,incentive_top_10pct_share,dividends_gini,dividends_nakamoto_coefficient,dividends_top_10pct_share,trust_mean,trust_median,consensus_mean,consensus_median,validator_trust_mean,validator_trust_median",
+    "2026-06-27,2,1,2,0.490099,1,0.990099,0.409091,1,0.909091,0.82,0.82,0.75,0.75,0.9,0.9",
+  ].join("\r\n"),
+  // Each row is one full hyperparameter snapshot at one block (the entire
+  // formatSubnetHyperparams shape flattened alongside the entry's own
+  // block_number/observed_at/hyperparams_hash) -- see hyperparamsHistoryCsvRows
+  // in workers/request-handlers/entities.mjs.
+  "subnet-hyperparameters-history": [
+    "block_number,observed_at,hyperparams_hash,kappa_ratio,immunity_period,min_allowed_weights,max_weight_limit_ratio,tempo,weights_version,weights_rate_limit,activity_cutoff,activity_cutoff_factor,registration_allowed,target_regs_per_interval,min_burn_tao,max_burn_tao,burn_half_life,burn_increase_mult,bonds_moving_avg_raw,max_regs_per_block,serving_rate_limit,max_validators,commit_reveal_period,commit_reveal_enabled,alpha_high_ratio,alpha_low_ratio,liquid_alpha_enabled,alpha_sigmoid_steepness,yuma_version,subnet_is_active,transfers_enabled,bonds_reset_enabled,user_liquidity_enabled,owner_cut_enabled,owner_cut_auto_lock_enabled,min_childkey_take_ratio",
+    "8454388,2026-06-27T00:00:00.000Z,a1b2c3d4e5f6,0.18,4096,1,1,99,0,0,5000,0,true,1,0.001,0.01,0,1.5,0,1,50,64,0,false,0.3,0.1,false,,1,true,true,false,false,false,false,0.1",
+  ].join("\r\n"),
   "subnet-events": EVENTS_CSV_EXAMPLE,
   "account-events": EVENTS_CSV_EXAMPLE,
   // The Postgres all-events feed: flat scalar columns of each raw pallet.method

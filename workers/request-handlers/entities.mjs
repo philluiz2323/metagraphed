@@ -403,6 +403,77 @@ const SUBNET_YIELD_HISTORY_CSV_COLUMNS = [
   "p75_yield",
   "p90_yield",
 ];
+// Mirrors performanceHistoryPoint's flat field order (src/subnet-performance.mjs).
+const SUBNET_PERFORMANCE_HISTORY_CSV_COLUMNS = [
+  "snapshot_date",
+  "neuron_count",
+  "validator_count",
+  "active_count",
+  "incentive_gini",
+  "incentive_nakamoto_coefficient",
+  "incentive_top_10pct_share",
+  "dividends_gini",
+  "dividends_nakamoto_coefficient",
+  "dividends_top_10pct_share",
+  "trust_mean",
+  "trust_median",
+  "consensus_mean",
+  "consensus_median",
+  "validator_trust_mean",
+  "validator_trust_median",
+];
+// Each entry's `hyperparameters` (formatSubnetHyperparams' 33-field shape,
+// src/subnet-hyperparams.mjs) is flattened alongside the entry's own
+// block_number/observed_at/hyperparams_hash, so a CSV row is one full
+// hyperparameter snapshot at one block -- the entire point of a hyperparameter
+// change-history export.
+const SUBNET_HYPERPARAMS_HISTORY_CSV_COLUMNS = [
+  "block_number",
+  "observed_at",
+  "hyperparams_hash",
+  "kappa_ratio",
+  "immunity_period",
+  "min_allowed_weights",
+  "max_weight_limit_ratio",
+  "tempo",
+  "weights_version",
+  "weights_rate_limit",
+  "activity_cutoff",
+  "activity_cutoff_factor",
+  "registration_allowed",
+  "target_regs_per_interval",
+  "min_burn_tao",
+  "max_burn_tao",
+  "burn_half_life",
+  "burn_increase_mult",
+  "bonds_moving_avg_raw",
+  "max_regs_per_block",
+  "serving_rate_limit",
+  "max_validators",
+  "commit_reveal_period",
+  "commit_reveal_enabled",
+  "alpha_high_ratio",
+  "alpha_low_ratio",
+  "liquid_alpha_enabled",
+  "alpha_sigmoid_steepness",
+  "yuma_version",
+  "subnet_is_active",
+  "transfers_enabled",
+  "bonds_reset_enabled",
+  "user_liquidity_enabled",
+  "owner_cut_enabled",
+  "owner_cut_auto_lock_enabled",
+  "min_childkey_take_ratio",
+];
+
+function hyperparamsHistoryCsvRows(entries) {
+  return (Array.isArray(entries) ? entries : []).map((entry) => ({
+    block_number: entry.block_number,
+    observed_at: entry.observed_at,
+    hyperparams_hash: entry.hyperparams_hash,
+    ...(entry.hyperparameters || {}),
+  }));
+}
 const ACCOUNT_EXTRINSICS_CSV_COLUMNS = [
   "extrinsic_id",
   "block_number",
@@ -673,8 +744,11 @@ export async function handleSubnetHyperparamsHistory(
     "limit",
     "offset",
     "cursor",
+    "format",
   ]);
   if (validationError) return analyticsQueryError(validationError);
+  const formatError = validateResponseFormat(url);
+  if (formatError) return analyticsQueryError(formatError);
   const { limit, offset } = parsePagination(url, FEED_PAGINATION);
   const data =
     (await tryPostgresTier(
@@ -687,6 +761,15 @@ export async function handleSubnetHyperparamsHistory(
       offset,
       nextCursor: null,
     });
+  if (csvRequested(url, request)) {
+    return csvResponse(
+      hyperparamsHistoryCsvRows(data.entries),
+      `subnet-${netuid}-hyperparams-history`,
+      "short",
+      request,
+      SUBNET_HYPERPARAMS_HISTORY_CSV_COLUMNS,
+    );
+  }
   return envelopeResponse(
     request,
     {
@@ -1362,8 +1445,23 @@ export function canonicalSubnetConcentrationHistoryCachePath(
   );
 }
 
-export function canonicalSubnetPerformanceHistoryCachePath(url) {
-  return canonicalWindowedCachePath(url, parseSubnetPerformanceHistoryWindow);
+export function canonicalSubnetPerformanceHistoryCachePath(
+  url,
+  request = null,
+) {
+  const validationError = validateQueryParams(url, ["window", "format"]);
+  if (validationError) return `${url.pathname}${url.search}`;
+  const formatError = validateResponseFormat(url);
+  if (formatError) return `${url.pathname}${url.search}`;
+  const { label, error } = parseSubnetPerformanceHistoryWindow(
+    url.searchParams.get("window"),
+  );
+  if (error) return `${url.pathname}${url.search}`;
+  return csvCacheVariant(
+    url,
+    request,
+    `${url.pathname}?window=${encodeURIComponent(label)}`,
+  );
 }
 
 export function canonicalSubnetYieldHistoryCachePath(url, request = null) {
@@ -1636,8 +1734,10 @@ export async function handleSubnetPerformanceHistory(
   netuid,
   url,
 ) {
-  const validationError = validateQueryParams(url, ["window"]);
+  const validationError = validateQueryParams(url, ["window", "format"]);
   if (validationError) return analyticsQueryError(validationError);
+  const formatError = validateResponseFormat(url);
+  if (formatError) return analyticsQueryError(formatError);
   const { label, error } = parseSubnetPerformanceHistoryWindow(
     url.searchParams.get("window"),
   );
@@ -1650,6 +1750,18 @@ export async function handleSubnetPerformanceHistory(
       window: label,
       capped: false,
     });
+  if (csvRequested(url, request)) {
+    const points = [...data.points].sort((a, b) =>
+      String(a.snapshot_date).localeCompare(String(b.snapshot_date)),
+    );
+    return csvResponse(
+      points,
+      `subnet-${netuid}-performance-history`,
+      "short",
+      request,
+      SUBNET_PERFORMANCE_HISTORY_CSV_COLUMNS,
+    );
+  }
   return envelopeResponse(
     request,
     {
