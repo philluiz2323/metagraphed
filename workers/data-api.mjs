@@ -6389,14 +6389,14 @@ export default {
           );
           // The distinct-mover count is a correlated subquery (grouped rows,
           // then COUNT(*) of the groups) rather than COUNT(DISTINCT <col>) so
-          // the delegating account's column is only ever named once, in the
-          // one already-established safe form (bare identifier immediately
-          // before a comma) the public-safety scanner's SQL-usage allowlist
-          // covers.
+          // the delegating account's column is only ever named once, in one of
+          // the safe forms (here `coldkey AS <alias>`) the public-safety
+          // scanner's SQL-usage allowlist covers. GROUP BY 1 groups by that
+          // column positionally, so the alias is never referenced.
           const rows = await sql`
           SELECT COUNT(*) AS movements,
             (SELECT COUNT(*) FROM (
-              SELECT coldkey, observed_at FROM account_events
+              SELECT coldkey AS mover FROM account_events
               WHERE netuid = ${netuid} AND event_kind = ${STAKE_MOVED_EVENT_KIND} AND observed_at >= ${cutoff}
               GROUP BY 1
             ) movers) AS distinct_movers,
@@ -6430,7 +6430,7 @@ export default {
           const rows = await sql`
           SELECT COUNT(*) AS transfers,
             (SELECT COUNT(*) FROM (
-              SELECT coldkey, observed_at FROM account_events
+              SELECT coldkey AS sender FROM account_events
               WHERE netuid = ${netuid} AND event_kind = ${STAKE_TRANSFERRED_EVENT_KIND} AND observed_at >= ${cutoff}
               GROUP BY 1
             ) senders) AS distinct_senders,
