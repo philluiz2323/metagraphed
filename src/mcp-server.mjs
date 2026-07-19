@@ -3178,9 +3178,32 @@ export const MCP_TOOLS = [
         spot_price_tao: { type: "number" },
         effective_price_tao: { type: "number" },
         price_impact_pct: { type: "number" },
+        warnings: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Non-fatal cautions the preview computes from data it already has " +
+            "(e.g. high price impact). Empty array when none apply -- never " +
+            "null or omitted.",
+        },
+        ok: {
+          type: "boolean",
+          description:
+            "Policy-style compliance flag in the emerging plan-shaped tool " +
+            "vocabulary: false when a documented threshold (high price impact) " +
+            "is exceeded, true otherwise. Never implies the action was executed.",
+        },
         disclaimer: { type: "string" },
       },
-      required: ["netuid", "direction", "amount", "summary", "disclaimer"],
+      required: [
+        "netuid",
+        "direction",
+        "amount",
+        "summary",
+        "warnings",
+        "ok",
+        "disclaimer",
+      ],
       additionalProperties: true,
     },
     async handler(args, ctx) {
@@ -3208,6 +3231,28 @@ export const MCP_TOOLS = [
       const summary = q.is_root
         ? `${verb} ${amount} ${inUnit} on subnet ${netuid} (root) previews an estimated ${q.expected_out} ${outUnit} at a 1:1 price with no price impact.`
         : `${verb} ${amount} ${inUnit} on subnet ${netuid} previews an estimated ${q.expected_out} ${outUnit} at an effective price of ${q.effective_price_tao} TAO/alpha (spot ${q.spot_price_tao}), with an estimated ${q.price_impact_pct}% price impact (slippage).`;
+      // Adopt the `plan`-shaped tool vocabulary (warnings + a policy-style flag)
+      // agents already expect from previewable-mutation tools, computed only from
+      // data this preview already has. A realized price >= this many percent from
+      // spot is the "worth pausing on" case: 5% mirrors the widely-used DeFi
+      // high-slippage caution line (the level swap UIs like Uniswap surface a
+      // slippage warning at) -- there is no existing threshold in this codebase,
+      // so this adopts that cross-ecosystem convention. Root (netuid 0) is 1:1
+      // with zero impact, so it never warns.
+      const PRICE_IMPACT_WARN_PCT = 5;
+      const warnings = [];
+      if (
+        !q.is_root &&
+        Number.isFinite(q.price_impact_pct) &&
+        q.price_impact_pct >= PRICE_IMPACT_WARN_PCT
+      ) {
+        warnings.push(
+          `High price impact: this ${direction} moves the effective price ${q.price_impact_pct}% away from spot (>= ${PRICE_IMPACT_WARN_PCT}% is considered high slippage); consider a smaller amount.`,
+        );
+      }
+      // false when a documented threshold trips (here: high price impact), true
+      // otherwise. Never implies execution -- this tool stays strictly read-only.
+      const ok = warnings.length === 0;
       return {
         netuid: q.netuid,
         direction: q.direction,
@@ -3217,6 +3262,8 @@ export const MCP_TOOLS = [
         spot_price_tao: q.spot_price_tao,
         effective_price_tao: q.effective_price_tao,
         price_impact_pct: q.price_impact_pct,
+        warnings,
+        ok,
         disclaimer:
           "Informational preview only. This does not execute, build, prepare, " +
           "or sign any transaction, produces no signable or extrinsic artifact, " +

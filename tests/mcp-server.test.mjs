@@ -8781,6 +8781,46 @@ describe("MCP economics + metagraph data tools", () => {
     assert.equal(out.price_impact_pct, 0);
     assert.match(out.summary, /root/);
     assert.match(out.summary, /no price impact/);
+    // Root is 1:1 with zero impact -> plan-shaped fields say "clean".
+    assert.deepEqual(out.warnings, []);
+    assert.equal(out.ok, true);
+  });
+
+  test("get_stake_action_preview flags a high-price-impact stake (warnings + ok:false)", async () => {
+    // ~20k TAO into the ~202k-TAO pool is ~10% price impact (>= the 5%
+    // high-slippage threshold), so the preview must surface a warning and flip
+    // ok to false -- still strictly read-only, no execution.
+    const res = await callTool(
+      "get_stake_action_preview",
+      { netuid: 64, amount: 20000, direction: "stake" },
+      {
+        deps: makeDeps({ "/metagraph/economics.json": STAKE_QUOTE_BLOB }, {}),
+        env: {},
+      },
+    );
+    const out = res.body.result.structuredContent;
+    assert.ok(out.price_impact_pct >= 5);
+    assert.equal(out.warnings.length, 1);
+    assert.match(out.warnings[0], /High price impact/);
+    assert.equal(out.ok, false);
+    // The flag never implies execution -- the disclaimer still holds.
+    assert.match(out.disclaimer, /does not execute/i);
+  });
+
+  test("get_stake_action_preview returns a clean plan shape for a low-impact stake", async () => {
+    // ~1k TAO into the ~202k-TAO pool is well under 1% impact -> no warnings.
+    const res = await callTool(
+      "get_stake_action_preview",
+      { netuid: 64, amount: 1000, direction: "stake" },
+      {
+        deps: makeDeps({ "/metagraph/economics.json": STAKE_QUOTE_BLOB }, {}),
+        env: {},
+      },
+    );
+    const out = res.body.result.structuredContent;
+    assert.ok(out.price_impact_pct < 5);
+    assert.deepEqual(out.warnings, []);
+    assert.equal(out.ok, true);
   });
 
   test("get_stake_action_preview output carries NO signable/extrinsic payload — only the human-readable summary", async () => {
