@@ -1,0 +1,40 @@
+---
+title: Documentation
+description: The metagraphed docs — a builder-facing reference for the Bittensor subnet integration registry and first-party block explorer. Start here.
+---
+
+metagraphed indexes every Bittensor subnet — its public APIs, schemas, docs, endpoints,
+providers, freshness, and registry gaps — and ships a first-party developer block explorer
+over chain-direct data. These docs cover both: the registry's public API and the explorer
+surfaces, plus the access layers (RPC, GraphQL, feeds, webhooks, search/AI) built on top.
+
+Everything here is public and needs no API key.
+
+<Callout type="info">
+  Looking for the full per-endpoint reference with a live try-it client? See the [API
+  reference](/docs/api-reference) — generated straight from the published [OpenAPI spec](/schemas).
+</Callout>
+
+## Registry & subnets
+
+- [Subnets](/docs/subnets) — `GET /api/v1/subnets` and its structure, lifecycle, market, and detail resources.
+- [Subnet metagraph & validators](/docs/metagraph) — `/subnets/{netuid}/metagraph`, `/validators`, `/neurons`, and history.
+- [Subnet catalog](/docs/catalog) — the 129 curated subnets, generated from the registry overlays.
+- [Economics](/docs/economics) — `/api/v1/economics` and `/economics/trends`, the dynamic-TAO market data.
+- [Health & readiness](/docs/health) — `/api/v1/health`, `/health/history/{date}`, `/health/trends`, and probe-derived uptime.
+
+## Block explorer
+
+- [Blocks](/docs/blocks) — `GET /api/v1/blocks`, block detail/extrinsics/events, and block-production stats.
+- [Extrinsics](/docs/extrinsics) — `/api/v1/extrinsics`, `/extrinsics/{hash}`, and governance/config surfaces.
+- [Accounts](/docs/accounts) — `GET /api/v1/accounts/{ss58}` and its sub-resources — identity, stake, and activity.
+- [Chain events reference](/docs/chain-events) — `GET /api/v1/chain-events`, `/chain-events/stats`, and the block-level event feed.
+- [Chain analytics](/docs/chain-analytics) — `/api/v1/chain/*` chain-wide rollups and leaderboards.
+
+## Access & integration
+
+- [RPC](/docs/rpc) — one read-only JSON-RPC URL for Bittensor, health-aware load balancing.
+- [GraphQL](/docs/graphql) — shape one request across the registry.
+- [Search & AI](/docs/search-ai) — `GET /api/v1/search`, `/search/semantic`, and `POST /api/v1/ask`.
+- [Feeds](/docs/feeds) — subscribe to registry changes, incidents, and coverage gaps.
+- [Webhooks](/docs/webhooks) — `POST`/`GET`/`DELETE /api/v1/webhooks/subscriptions` for change delivery.
