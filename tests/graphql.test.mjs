@@ -1666,6 +1666,130 @@ describe("graphql — profiles", () => {
   });
 });
 
+describe("graphql — coverage", () => {
+  const COVERAGE_BLOB = {
+    generated_at: "2026-06-20T00:00:00Z",
+    surface_count: 850,
+    official_surface_count: 400,
+    completeness: { mean: 0.72 },
+    domain_coverage: { inference: 12 },
+  };
+
+  test("resolves the baked coverage summary verbatim", async () => {
+    const env = fixtureEnv({ "/metagraph/coverage.json": COVERAGE_BLOB });
+    const { status, body } = await gql("{ coverage }", env);
+    assert.equal(status, 200);
+    assert.deepEqual(body.data.coverage, COVERAGE_BLOB);
+  });
+
+  test("surfaces a cold/missing artifact as a GraphQL error, matching REST/MCP", async () => {
+    const { body } = await gql("{ coverage }", emptyEnv);
+    assert.ok(body.errors?.length);
+    // `coverage` is a nullable field (unlike `curation`/`coverage_depth`), so
+    // the thrown error nulls out just this field, not the whole data object.
+    assert.equal(body.data.coverage, null);
+  });
+
+  test("FIELD_COMPLEXITY weights it like its sibling relationship fields", () => {
+    assert.equal(FIELD_COMPLEXITY.coverage, 5);
+  });
+});
+
+describe("graphql — coverage_depth", () => {
+  const COVERAGE_DEPTH_ROW = {
+    netuid: 7,
+    slug: "allways",
+    name: "Allways",
+    tier: "machine-usable",
+    agent_status: "ready",
+    blocker_level: "none",
+    priority_score: 10,
+  };
+
+  const COVERAGE_DEPTH_BLOB = {
+    generated_at: "2026-06-20T00:00:00Z",
+    coverage_depth_version: "1",
+    rows: [
+      COVERAGE_DEPTH_ROW,
+      {
+        ...COVERAGE_DEPTH_ROW,
+        netuid: 1,
+        slug: "alpha",
+        name: "Alpha",
+        tier: "manifest-only",
+        agent_status: "blocked",
+        blocker_level: "hard-blocked",
+        priority_score: 90,
+      },
+    ],
+  };
+
+  test("filters by netuid and paginates", async () => {
+    const env = fixtureEnv({
+      "/metagraph/coverage-depth.json": COVERAGE_DEPTH_BLOB,
+    });
+    const filtered = await gql(
+      "{ coverage_depth(netuid: 7) { rows total generated_at } }",
+      env,
+    );
+    assert.equal(filtered.status, 200);
+    assert.equal(filtered.body.data.coverage_depth.total, 1);
+    assert.equal(filtered.body.data.coverage_depth.rows[0].slug, "allways");
+    assert.equal(
+      filtered.body.data.coverage_depth.generated_at,
+      "2026-06-20T00:00:00Z",
+    );
+
+    const paged = await gql(
+      "{ coverage_depth(limit: 1) { rows total returned next_cursor } }",
+      env,
+    );
+    assert.equal(paged.body.data.coverage_depth.rows.length, 1);
+    assert.equal(paged.body.data.coverage_depth.total, 2);
+    assert.equal(paged.body.data.coverage_depth.returned, 1);
+    assert.ok(paged.body.data.coverage_depth.next_cursor != null);
+  });
+
+  test("filters by blocker_level and sorts by netuid", async () => {
+    const env = fixtureEnv({
+      "/metagraph/coverage-depth.json": COVERAGE_DEPTH_BLOB,
+    });
+    const filtered = await gql(
+      '{ coverage_depth(blocker_level: "hard-blocked") { rows total } }',
+      env,
+    );
+    assert.equal(filtered.body.data.coverage_depth.total, 1);
+    assert.equal(filtered.body.data.coverage_depth.rows[0].slug, "alpha");
+
+    const sorted = await gql(
+      '{ coverage_depth(sort: "netuid", order: "desc") { rows } }',
+      env,
+    );
+    assert.equal(sorted.body.data.coverage_depth.rows[0].slug, "allways");
+  });
+
+  test("surfaces an invalid tier as a GraphQL error, not a silent default", async () => {
+    const env = fixtureEnv({
+      "/metagraph/coverage-depth.json": COVERAGE_DEPTH_BLOB,
+    });
+    const { body } = await gql(
+      '{ coverage_depth(tier: "bogus") { total } }',
+      env,
+    );
+    assert.ok(body.errors?.length);
+  });
+
+  test("surfaces a cold/missing artifact as a GraphQL error, matching REST/MCP", async () => {
+    const { body } = await gql("{ coverage_depth { total } }", emptyEnv);
+    assert.ok(body.errors?.length);
+    assert.equal(body.data, null);
+  });
+
+  test("FIELD_COMPLEXITY weights it like its sibling relationship fields", () => {
+    assert.equal(FIELD_COMPLEXITY.coverage_depth, 5);
+  });
+});
+
 describe("graphql — economics pagination", () => {
   const env = () =>
     fixtureEnv({

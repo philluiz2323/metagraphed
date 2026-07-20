@@ -26,6 +26,14 @@ import { loadEndpointIncidentsList } from "./endpoint-incidents-mcp.mjs";
 // #6984: GraphQL parity for GET /api/v1/adapters/{slug}, reusing loadAdapter that
 // MCP get_adapter already calls (#3255) -- not a reimplementation.
 import { loadAdapter } from "./adapters-mcp.mjs";
+// #6983: GraphQL parity for GET /api/v1/coverage + /api/v1/coverage-depth.
+// `coverage` reuses get_coverage's own loadRegistryCoverage unchanged.
+// `coverage_depth` reuses the new list_coverage_depth loader (added alongside
+// this field, since the only pre-existing coverage-depth MCP tool,
+// list_enrichment_targets, reshapes the artifact into a curated ranked-queue
+// view rather than REST's generic filter/sort/page contract).
+import { loadRegistryCoverage } from "./registry-coverage.mjs";
+import { loadCoverageDepthList } from "./coverage-depth-mcp.mjs";
 import {
   buildChainAxonRemovals,
   CHAIN_AXON_REMOVALS_WINDOWS,
@@ -473,6 +481,10 @@ export const SDL = `
     source_snapshots(q: String, sort: String, order: String, fields: String, limit: Int, cursor: Int): SourceSnapshotList!
     "Public-safe subnet profile index -- completeness scores, surface/interface counts, curation level, review state, and confidence for every registered subnet. Filter by netuid/subnet_type/curation_level/review_state/confidence/profile_level, search name/slug/project/team/categories with q, sort with sort/order, and page with limit (1-1000)/cursor. An invalid filter/sort/limit/cursor is a GraphQL error, not a silently substituted default. Mirrors GET /api/v1/profiles."
     profiles(netuid: Int, subnet_type: String, curation_level: String, review_state: String, confidence: String, profile_level: String, q: String, sort: String, order: String, fields: String, limit: Int, cursor: Int): ProfileList!
+    "Registry-wide coverage rollup -- surface counts, official-surface coverage, completeness scores, and domain breakdown. Opaque JSON passed through verbatim, matching the get_coverage MCP/REST shape. Mirrors GET /api/v1/coverage."
+    coverage: JSON
+    "Per-subnet coverage-depth scorecard rows -- tier, agent_status, blocker_level, priority_score, and top gap codes for every registered subnet. Filter by netuid/tier/agent_status/blocker_level, search q, sort with sort/order, and page with limit (1-100)/cursor. An invalid filter/sort/limit/cursor is a GraphQL error, not a silently substituted default. Mirrors GET /api/v1/coverage-depth."
+    coverage_depth(netuid: Int, tier: String, agent_status: String, blocker_level: String, q: String, sort: String, order: String, fields: String, limit: Int, cursor: Int): CoverageDepthList!
     "Global operational health rollup with per-subnet summaries."
     health: GlobalHealth
     "Cross-subnet economic opportunity boards (where to register, what it costs, where the emission and validator headroom are)."
@@ -1734,6 +1746,19 @@ export const SDL = `
   type ProfileList {
     captured_at: String
     profiles: [JSON!]!
+    total: Int!
+    returned: Int!
+    limit: Int!
+    cursor: Int!
+    next_cursor: Int
+    sort: String
+    order: String
+  }
+
+  type CoverageDepthList {
+    generated_at: String
+    coverage_depth_version: String
+    rows: [JSON!]!
     total: Int!
     returned: Int!
     limit: Int!
@@ -3479,6 +3504,8 @@ export const FIELD_COMPLEXITY = {
   endpoint_incidents: RELATIONSHIP_FIELD_COMPLEXITY,
   source_snapshots: RELATIONSHIP_FIELD_COMPLEXITY,
   profiles: RELATIONSHIP_FIELD_COMPLEXITY,
+  coverage: RELATIONSHIP_FIELD_COMPLEXITY,
+  coverage_depth: RELATIONSHIP_FIELD_COMPLEXITY,
   health: RELATIONSHIP_FIELD_COMPLEXITY,
   opportunity_boards: RELATIONSHIP_FIELD_COMPLEXITY,
   compare: RELATIONSHIP_FIELD_COMPLEXITY,
@@ -5023,6 +5050,14 @@ const rootValue = {
     return loadProfilesList(context, args, {
       readOptionalArtifact: loadArtifact,
     });
+  },
+
+  coverage(_args, context) {
+    return loadRegistryCoverage(context, { readArtifact });
+  },
+
+  coverage_depth(args, context) {
+    return loadCoverageDepthList(context, args, { readArtifact });
   },
 
   async health(_args, context) {

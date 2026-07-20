@@ -202,6 +202,12 @@ import {
   loadRegistryCoverage,
 } from "./registry-coverage.mjs";
 import {
+  LIST_COVERAGE_DEPTH_INSTRUCTIONS,
+  LIST_COVERAGE_DEPTH_MCP_TOOL,
+  LIST_COVERAGE_DEPTH_OUTPUT_SCHEMA,
+  loadCoverageDepthList,
+} from "./coverage-depth-mcp.mjs";
+import {
   GET_CONTRACTS_INSTRUCTIONS,
   GET_CONTRACTS_MCP_TOOL,
   GET_CONTRACTS_OUTPUT_SCHEMA,
@@ -821,6 +827,7 @@ export const MCP_INSTRUCTIONS =
   GET_BUILD_INSTRUCTIONS +
   GET_ADAPTER_INSTRUCTIONS +
   LIST_CURATION_INSTRUCTIONS +
+  LIST_COVERAGE_DEPTH_INSTRUCTIONS +
   LIST_GAPS_INSTRUCTIONS +
   LIST_ENRICHMENT_QUEUE_INSTRUCTIONS +
   LIST_ADAPTER_CANDIDATES_INSTRUCTIONS +
@@ -9986,6 +9993,12 @@ export const MCP_TOOLS = [
     },
   },
   {
+    ...LIST_COVERAGE_DEPTH_MCP_TOOL,
+    async handler(args, ctx) {
+      return loadCoverageDepthList(ctx, args);
+    },
+  },
+  {
     ...LIST_GAPS_MCP_TOOL,
     async handler(args, ctx) {
       return loadGapsList(ctx, args);
@@ -15003,6 +15016,7 @@ const TOOL_OUTPUT_SCHEMAS = {
   list_search_index: LIST_SEARCH_INDEX_OUTPUT_SCHEMA,
   list_search: LIST_SEARCH_OUTPUT_SCHEMA,
   list_curation: LIST_CURATION_OUTPUT_SCHEMA,
+  list_coverage_depth: LIST_COVERAGE_DEPTH_OUTPUT_SCHEMA,
   list_gaps: LIST_GAPS_OUTPUT_SCHEMA,
   list_enrichment_queue: LIST_ENRICHMENT_QUEUE_OUTPUT_SCHEMA,
   list_adapter_candidates: LIST_ADAPTER_CANDIDATES_OUTPUT_SCHEMA,
