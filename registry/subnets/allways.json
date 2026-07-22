@@ -950,6 +950,24 @@
       },
       "source_urls": ["https://api.all-ways.io/swagger-json"],
       "url": "https://api.all-ways.io/treasury/churn"
+    },
+    {
+      "auth_required": false,
+      "authority": "community",
+      "id": "sn-7-allways-data-artifact",
+      "kind": "data-artifact",
+      "name": "Allways minimum compute requirements",
+      "notes": "Public no-auth min_compute.yml committed at the root of Allways' official SN7 source repository (entrius/allways, the registered SN7 source-repo) — the machine-readable minimum hardware specification (CPU cores/speed, RAM, storage, OS, Python version, GPU requirement) for running an Allways miner or validator. Live-verified 2026-07-22: HTTP 200, YAML.",
+      "provider": "allways",
+      "public_safe": true,
+      "review": {
+        "state": "community-submitted",
+        "submitted_by": "philluiz2323"
+      },
+      "source_urls": [
+        "https://github.com/entrius/allways/blob/0f30f597642f573b37953799a616cb04de5cba7a/min_compute.yml"
+      ],
+      "url": "https://raw.githubusercontent.com/entrius/allways/0f30f597642f573b37953799a616cb04de5cba7a/min_compute.yml"
     }
   ],
   "website_url": "https://all-ways.io/"
